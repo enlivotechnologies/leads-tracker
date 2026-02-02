@@ -20,17 +20,15 @@ import {
 interface DashboardClientProps {
   employeeName: string;
   initialLeads: Lead[];
+  initialDate: string;
 }
 
 export function DashboardClient({
   employeeName,
   initialLeads,
+  initialDate,
 }: DashboardClientProps) {
-  const [selectedDate, setSelectedDate] = useState(() => {
-    // Use a stable initial date that works on both server and client
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  });
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState("today");
   const [isAddingLead, setIsAddingLead] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,8 +36,14 @@ export function DashboardClient({
   const [todayLeads, setTodayLeads] = useState<Lead[]>(initialLeads);
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
 
-  const isPast = isPastDate(selectedDate);
-  const isTodaySelected = isToday(selectedDate);
+  // Initialize date from server string on mount
+  useEffect(() => {
+    const [year, month, day] = initialDate.split("-").map(Number);
+    setSelectedDate(new Date(year, month - 1, day));
+  }, [initialDate]);
+
+  const isPast = selectedDate ? isPastDate(selectedDate) : false;
+  const isTodaySelected = selectedDate ? isToday(selectedDate) : false;
   const canAddLead = isTodaySelected && activeTab === "today";
 
   const fetchLeadsForDate = useCallback(async (date: Date) => {
@@ -69,6 +73,8 @@ export function DashboardClient({
 
   // Fetch leads when tab changes
   useEffect(() => {
+    if (!selectedDate) return;
+
     if (activeTab === "today") {
       fetchLeadsForDate(selectedDate);
     } else if (activeTab === "all") {
