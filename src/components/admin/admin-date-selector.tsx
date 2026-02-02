@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface AdminDateSelectorProps {
@@ -8,6 +9,15 @@ interface AdminDateSelectorProps {
 
 export function AdminDateSelector({ selectedDate }: AdminDateSelectorProps) {
   const router = useRouter();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    const now = new Date();
+    setToday(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+  }, []);
 
   // Parse selected date
   const [selectedYear, selectedMonth, selectedDay] = selectedDate
@@ -15,26 +25,49 @@ export function AdminDateSelector({ selectedDate }: AdminDateSelectorProps) {
     .map(Number);
   const selected = new Date(selectedYear, selectedMonth - 1, selectedDay);
 
-  // Get today's date (local)
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Generate dates: 30 days before and up to today
+  const generateDates = () => {
+    if (!today) {
+      // Fallback to selected date based range
+      const dates = [];
+      for (let i = -30; i <= 7; i++) {
+        const date = new Date(selected);
+        date.setDate(selected.getDate() + i);
+        dates.push(date);
+      }
+      return dates;
+    }
 
-  // Generate 7 days: 3 before, selected, 3 after
-  const generateWeekDates = () => {
     const dates = [];
-    for (let i = -3; i <= 3; i++) {
-      const date = new Date(selected);
-      date.setDate(selected.getDate() + i);
+    for (let i = -30; i <= 0; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
       dates.push(date);
     }
     return dates;
   };
 
-  const weekDates = generateWeekDates();
+  const allDates = generateDates();
+
+  // Scroll to selected date on mount
+  useEffect(() => {
+    if (scrollRef.current && mounted) {
+      const selectedElement = scrollRef.current.querySelector(
+        '[data-selected="true"]',
+      );
+      if (selectedElement) {
+        selectedElement.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }
+    }
+  }, [mounted]);
 
   const navigateToDate = (date: Date) => {
     // Don't allow future dates
-    if (date > today) return;
+    if (today && date > today) return;
 
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     router.push(`/admin?date=${dateStr}`);
@@ -48,61 +81,62 @@ export function AdminDateSelector({ selectedDate }: AdminDateSelectorProps) {
     return date.getTime() === selected.getTime();
   };
 
+  const isToday = (date: Date) => {
+    if (!today) return false;
+    return date.getTime() === today.getTime();
+  };
+
   const isFuture = (date: Date) => {
+    if (!today) return false;
     return date > today;
   };
 
   return (
-    <div className="mb-6">
-      {/* Day names row */}
-      <div className="flex items-center justify-between px-1 mb-3">
-        {weekDates.map((date, index) => {
-          const isSelected = isSelectedDate(date);
-          return (
-            <div key={`day-${index}`} className="flex-1 text-center">
-              <span
-                className={`text-xs font-medium ${
-                  isSelected ? "text-slate-800" : "text-slate-400"
-                }`}
-              >
-                {formatDayName(date)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Date circles row */}
-      <div className="flex items-center justify-between px-1">
-        {weekDates.map((date, index) => {
+    <div className="mb-6 w-full overflow-hidden">
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {allDates.map((date, index) => {
           const isSelected = isSelectedDate(date);
           const future = isFuture(date);
+          const isTodayDate = isToday(date);
 
           return (
             <button
-              key={`date-${index}`}
+              key={index}
+              data-selected={isSelected}
               onClick={() => navigateToDate(date)}
               disabled={future}
-              className="flex-1 flex justify-center"
+              className={`
+                flex flex-col items-center justify-center min-w-[56px] py-2 px-3 rounded-xl transition-all snap-center
+                ${
+                  isSelected
+                    ? "bg-blue-500 text-white"
+                    : future
+                      ? "bg-gray-50 text-gray-300 cursor-not-allowed"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                }
+              `}
             >
-              <div
-                className={`
-                  w-11 h-11 rounded-full flex items-center justify-center transition-all
-                  ${
-                    isSelected
-                      ? "bg-slate-800 text-white shadow-lg"
-                      : future
-                        ? "bg-stone-100 text-slate-300 cursor-not-allowed"
-                        : "bg-stone-100 text-slate-700 hover:bg-stone-200"
-                  }
-                `}
+              <span className="text-[10px] uppercase font-medium opacity-70">
+                {formatDayName(date)}
+              </span>
+              <span
+                className={`text-lg font-semibold ${
+                  isTodayDate && !isSelected ? "text-blue-500" : ""
+                }`}
               >
-                <span
-                  className={`text-base font-semibold ${isSelected ? "text-white" : ""}`}
-                >
-                  {date.getDate()}
-                </span>
-              </div>
+                {date.getDate()}
+              </span>
+              {isTodayDate && (
+                <div
+                  className={`w-1.5 h-1.5 rounded-full mt-0.5 ${
+                    isSelected ? "bg-white" : "bg-blue-500"
+                  }`}
+                />
+              )}
             </button>
           );
         })}

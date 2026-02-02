@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { signOut } from "@/app/actions/auth";
 
 interface AdminHeaderProps {
@@ -30,6 +31,30 @@ function LogoutIcon() {
 }
 
 export function AdminHeader({ admin }: AdminHeaderProps) {
+  const [mounted, setMounted] = useState(false);
+  const [greeting, setGreeting] = useState("");
+  const [formattedDate, setFormattedDate] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+    const now = new Date();
+    const hour = now.getHours();
+
+    // Set greeting
+    if (hour < 12) setGreeting("Morning");
+    else if (hour < 17) setGreeting("Afternoon");
+    else setGreeting("Evening");
+
+    // Set formatted date
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    };
+    setFormattedDate(now.toLocaleDateString("en-US", options));
+  }, []);
+
   const handleSignOut = async () => {
     await signOut();
   };
@@ -37,35 +62,17 @@ export function AdminHeader({ admin }: AdminHeaderProps) {
   // Get first name only
   const firstName = admin.name.split(" ")[0];
 
-  // Get time-based greeting
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Morning";
-    if (hour < 17) return "Afternoon";
-    return "Evening";
-  };
-
-  // Format current date
-  const formatDate = () => {
-    const now = new Date();
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    };
-    return now.toLocaleDateString("en-US", options);
-  };
-
   return (
     <header className="bg-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-medium text-slate-800">
-              {getGreeting()}, {firstName}
+              {mounted ? `${greeting}, ${firstName}` : `Hello, ${firstName}`}
             </h1>
-            <p className="text-slate-500 text-sm mt-0.5">{formatDate()}</p>
+            <p className="text-slate-500 text-sm mt-0.5">
+              {mounted ? formattedDate : ""}
+            </p>
           </div>
           <button
             onClick={handleSignOut}

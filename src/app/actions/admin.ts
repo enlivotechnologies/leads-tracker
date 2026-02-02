@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+// Helper function to parse date string as local date
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 // Check if current user is admin
 export async function isAdmin() {
   const supabase = await createClient();
@@ -39,7 +45,7 @@ export async function getAdmin() {
 
 // Dashboard KPIs for a specific date
 export async function getDashboardKPIs(date: string) {
-  const targetDate = new Date(date);
+  const targetDate = parseLocalDate(date);
 
   const [totalCalls, slotsBooked, followUpsPending, activeEmployees] =
     await Promise.all([
@@ -85,7 +91,7 @@ export async function getDashboardKPIs(date: string) {
 
 // Employee performance table
 export async function getEmployeePerformance(date: string) {
-  const targetDate = new Date(date);
+  const targetDate = parseLocalDate(date);
 
   const employees = await prisma.employee.findMany({
     where: { role: "EMPLOYEE", isActive: true },
@@ -153,7 +159,7 @@ export async function getEmployeeDetail(employeeId: string, date?: string) {
 
   const whereClause: { employeeId: string; date?: Date } = { employeeId };
   if (date) {
-    whereClause.date = new Date(date);
+    whereClause.date = parseLocalDate(date);
   }
 
   const leads = await prisma.lead.findMany({
@@ -217,13 +223,13 @@ export async function getLeadsWithFilters(filters: {
 
   if (filters.dateFrom && filters.dateTo) {
     where.date = {
-      gte: new Date(filters.dateFrom),
-      lte: new Date(filters.dateTo),
+      gte: parseLocalDate(filters.dateFrom),
+      lte: parseLocalDate(filters.dateTo),
     };
   } else if (filters.dateFrom) {
-    where.date = { gte: new Date(filters.dateFrom) };
+    where.date = { gte: parseLocalDate(filters.dateFrom) };
   } else if (filters.dateTo) {
-    where.date = { lte: new Date(filters.dateTo) };
+    where.date = { lte: parseLocalDate(filters.dateTo) };
   }
 
   if (filters.employeeId) {
@@ -354,8 +360,8 @@ export async function getDateWiseReport(dateFrom: string, dateTo: string) {
   const leads = await prisma.lead.findMany({
     where: {
       date: {
-        gte: new Date(dateFrom),
-        lte: new Date(dateTo),
+        gte: parseLocalDate(dateFrom),
+        lte: parseLocalDate(dateTo),
       },
     },
     include: {
