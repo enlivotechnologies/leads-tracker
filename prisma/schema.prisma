@@ -1,0 +1,88 @@
+// Prisma schema for CSR Employee Activity Tracking
+// Connected to Supabase PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Employee {
+  id        String       @id @default(uuid())
+  userId    String       @unique @map("user_id") // Links to Supabase auth.users
+  email     String       @unique
+  name      String
+  role      EmployeeRole @default(EMPLOYEE)
+  isActive  Boolean      @default(true) @map("is_active")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  leads     Lead[]
+
+  @@map("employees")
+}
+
+model Lead {
+  id              String         @id @default(uuid())
+  employeeId      String         @map("employee_id")
+  date            DateTime       @db.Date
+  collegeName     String         @map("college_name")
+  location        String?
+  contactPerson   String?        @map("contact_person")
+  designation     Designation?
+  phone           String?
+  callType        CallType       @default(FIRST_CALL) @map("call_type")
+  slotRequested   Boolean        @default(false) @map("slot_requested")
+  slotDate        DateTime?      @db.Date @map("slot_date")
+  responseStatus  ResponseStatus @map("response_status")
+  remarks         String?
+  adminRemarks    String?        @map("admin_remarks")
+  isFlagged       Boolean        @default(false) @map("is_flagged")
+  followUpDone    Boolean        @default(false) @map("follow_up_done")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([date])
+  @@index([employeeId, date])
+  @@index([responseStatus])
+  @@index([slotDate])
+  @@map("leads")
+}
+
+enum EmployeeRole {
+  EMPLOYEE
+  ADMIN
+
+  @@map("employee_role")
+}
+
+enum Designation {
+  PRINCIPAL
+  VICE_PRINCIPAL
+  PLACEMENT_OFFICER
+  CSR_COORDINATOR
+  OTHER
+
+  @@map("designation")
+}
+
+enum CallType {
+  FIRST_CALL
+  FOLLOW_UP
+
+  @@map("call_type")
+}
+
+enum ResponseStatus {
+  INTERESTED
+  CALL_LATER
+  NOT_INTERESTED
+
+  @@map("response_status")
+}
