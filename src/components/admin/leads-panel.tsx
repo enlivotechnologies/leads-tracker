@@ -125,7 +125,6 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
                       {lead.collegeName}
                     </h3>
                   </div>
-                  </div>
                   <p className="text-sm text-slate-600">
                     {lead.contactPerson} • {lead.phoneNumber}
                   </p>
