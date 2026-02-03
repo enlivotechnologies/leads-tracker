@@ -20,6 +20,9 @@ export async function signIn(email: string, password: string) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  let redirectPath = "/dashboard";
+
   if (user) {
     let employee = await prisma.employee.findUnique({
       where: { userId: user.id },
@@ -36,13 +39,14 @@ export async function signIn(email: string, password: string) {
       });
     }
 
-    // Redirect based on role
+    // Set redirect path based on role
     if (employee.role === "ADMIN") {
-      redirect("/admin");
+      redirectPath = "/admin";
     }
   }
 
-  redirect("/dashboard");
+  // Return success with redirect path
+  return { success: true, redirectPath };
 }
 
 export async function signOut() {

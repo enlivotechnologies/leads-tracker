@@ -1,18 +1,18 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { LoginFormData, loginSchema } from '@/lib/validations'
-import { signIn } from '@/app/actions/auth'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { LoadingSpinner } from '@/components/ui/loading'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LoginFormData, loginSchema } from "@/lib/validations";
+import { signIn } from "@/app/actions/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -20,23 +20,26 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-  })
+  });
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const result = await signIn(data.email, data.password)
+      const result = await signIn(data.email, data.password);
       if (result?.error) {
-        setError(result.error)
+        setError(result.error);
+        setIsLoading(false);
+      } else if (result?.success && result?.redirectPath) {
+        // Successful login - redirect using window.location
+        window.location.href = result.redirectPath;
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
-    } finally {
-      setIsLoading(false)
+      setError("An unexpected error occurred. Please try again.");
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col justify-center px-6">
@@ -46,7 +49,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
             <span className="text-3xl">📞</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">CSR Tracker</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Tracker</h1>
           <p className="text-gray-500 mt-1">Employee Activity Tracking</p>
         </div>
 
@@ -65,7 +68,7 @@ export default function LoginPage() {
               type="email"
               placeholder="you@company.com"
               autoComplete="email"
-              {...register('email')}
+              {...register("email")}
             />
             {errors.email && (
               <p className="text-sm text-red-500">{errors.email.message}</p>
@@ -79,7 +82,7 @@ export default function LoginPage() {
               type="password"
               placeholder="••••••••"
               autoComplete="current-password"
-              {...register('password')}
+              {...register("password")}
             />
             {errors.password && (
               <p className="text-sm text-red-500">{errors.password.message}</p>
@@ -98,7 +101,7 @@ export default function LoginPage() {
                 Signing in...
               </>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </Button>
         </form>
@@ -108,5 +111,5 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
-  )
+  );
 }

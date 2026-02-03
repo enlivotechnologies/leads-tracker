@@ -89,7 +89,7 @@ export function DashboardClient({
 
   const handleAddLead = async (data: LeadFormValues) => {
     if (!selectedDate) return;
-    
+
     try {
       const dateString = getDateString(selectedDate);
       const newLead = await createLead(data, dateString);

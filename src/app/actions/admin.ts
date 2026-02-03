@@ -105,7 +105,9 @@ export async function getEmployeePerformance(date: string) {
 
   return employees.map((emp: any) => {
     const calls = emp.leads.length;
-    const slots = emp.leads.filter((l: any) => l.slotRequested && l.slotDate).length;
+    const slots = emp.leads.filter(
+      (l: any) => l.slotRequested && l.slotDate,
+    ).length;
     const interested = emp.leads.filter(
       (l: any) => l.responseStatus === "INTERESTED",
     ).length;
@@ -170,7 +172,9 @@ export async function getEmployeeDetail(employeeId: string, date?: string) {
 
   // Calculate stats
   const totalCalls = leads.length;
-  const totalSlots = leads.filter((l: any) => l.slotRequested && l.slotDate).length;
+  const totalSlots = leads.filter(
+    (l: any) => l.slotRequested && l.slotDate,
+  ).length;
   const interestedCount = leads.filter(
     (l: any) => l.responseStatus === "INTERESTED",
   ).length;
