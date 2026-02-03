@@ -46,9 +46,6 @@ export default function LoginPage() {
       <div className="w-full max-w-sm mx-auto">
         {/* Logo / Branding */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-            <span className="text-3xl">📞</span>
-          </div>
           <h1 className="text-2xl font-bold text-gray-900">Tracker</h1>
           <p className="text-gray-500 mt-1">Employee Activity Tracking</p>
         </div>
