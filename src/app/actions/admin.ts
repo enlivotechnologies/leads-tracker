@@ -342,11 +342,6 @@ export async function updateLeadAdmin(
   return lead;
 }
 
-// Flag a lead
-export async function flagLead(leadId: string, flag: boolean) {
-  return updateLeadAdmin(leadId, { isFlagged: flag });
-}
-
 // Mark follow-up as done
 export async function markFollowUpDone(leadId: string) {
   return updateLeadAdmin(leadId, { followUpDone: true });

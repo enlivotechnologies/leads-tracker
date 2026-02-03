@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, Flag, Calendar, X } from "lucide-react";
-import { getLeadsWithFilters, flagLead } from "@/app/actions/admin";
+import { Search, Filter, Calendar, X } from "lucide-react";
+import { getLeadsWithFilters } from "@/app/actions/admin";
 
 interface LeadsPanelProps {
   employees: {
@@ -23,7 +23,6 @@ interface Lead {
   slotDate: string | null;
   slotTime: string | null;
   date: string;
-  isFlagged: boolean;
   adminRemarks: string | null;
   employee: { name: string; email: string };
 }
@@ -39,7 +38,6 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
     employeeId: "",
     status: "",
     slotBooked: "",
-    isFlagged: false,
   });
 
   useEffect(() => {
@@ -55,11 +53,6 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
 
   const handleApplyFilters = () => {
     setShowFilters(false);
-    loadLeads();
-  };
-
-  const handleFlag = async (leadId: string, flag: boolean) => {
-    await flagLead(leadId, flag);
     loadLeads();
   };
 
@@ -123,7 +116,7 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
           {filteredLeads.map((lead) => (
             <div
               key={lead.id}
-              className={`p-4 ${lead.isFlagged ? "bg-red-50" : ""}`}
+              className="p-4"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -131,9 +124,7 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
                     <h3 className="font-medium text-slate-900">
                       {lead.collegeName}
                     </h3>
-                    {lead.isFlagged && (
-                      <Flag className="w-4 h-4 text-red-500 fill-red-500" />
-                    )}
+                  </div>
                   </div>
                   <p className="text-sm text-slate-600">
                     {lead.contactPerson} • {lead.phoneNumber}
@@ -162,20 +153,6 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
                   {lead.remarks}
                 </p>
               )}
-
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => handleFlag(lead.id, !lead.isFlagged)}
-                  className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                    lead.isFlagged
-                      ? "bg-red-100 text-red-600"
-                      : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  <Flag className="w-3 h-3" />
-                  {lead.isFlagged ? "Unflag" : "Flag"}
-                </button>
-              </div>
             </div>
           ))}
         </div>
@@ -283,18 +260,6 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
                   <option value="no">No</option>
                 </select>
               </div>
-
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={filters.isFlagged}
-                  onChange={(e) =>
-                    setFilters({ ...filters, isFlagged: e.target.checked })
-                  }
-                  className="rounded"
-                />
-                <span className="text-sm">Flagged only</span>
-              </label>
 
               <button
                 onClick={handleApplyFilters}
