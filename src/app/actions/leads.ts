@@ -90,7 +90,7 @@ export async function getLeadsByDate(date: string) {
 
   // For today: show all leads
   // For past dates: show only completed leads (INTERESTED or NOT_INTERESTED)
-  const whereClause = isToday
+  const whereClause: any = isToday
     ? {
         employeeId: employee.id,
         date: targetDate,

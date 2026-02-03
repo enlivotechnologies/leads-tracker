@@ -78,7 +78,7 @@ export async function getDashboardKPIs(date: string) {
           select: { employeeId: true },
           distinct: ["employeeId"],
         })
-        .then((result) => result.length),
+        .then((result: any) => result.length),
     ]);
 
   return {
@@ -103,14 +103,14 @@ export async function getEmployeePerformance(date: string) {
     orderBy: { name: "asc" },
   });
 
-  return employees.map((emp) => {
+  return employees.map((emp: any) => {
     const calls = emp.leads.length;
-    const slots = emp.leads.filter((l) => l.slotRequested && l.slotDate).length;
+    const slots = emp.leads.filter((l: any) => l.slotRequested && l.slotDate).length;
     const interested = emp.leads.filter(
-      (l) => l.responseStatus === "INTERESTED",
+      (l: any) => l.responseStatus === "INTERESTED",
     ).length;
     const followUps = emp.leads.filter(
-      (l) => l.responseStatus === "CALL_LATER",
+      (l: any) => l.responseStatus === "CALL_LATER",
     ).length;
     const interestedRate =
       calls > 0 ? Math.round((interested / calls) * 100) : 0;
@@ -140,7 +140,7 @@ export async function getAllEmployeesSummary() {
     orderBy: { name: "asc" },
   });
 
-  return employees.map((emp) => ({
+  return employees.map((emp: any) => ({
     id: emp.id,
     name: emp.name,
     email: emp.email,
@@ -170,12 +170,12 @@ export async function getEmployeeDetail(employeeId: string, date?: string) {
 
   // Calculate stats
   const totalCalls = leads.length;
-  const totalSlots = leads.filter((l) => l.slotRequested && l.slotDate).length;
+  const totalSlots = leads.filter((l: any) => l.slotRequested && l.slotDate).length;
   const interestedCount = leads.filter(
-    (l) => l.responseStatus === "INTERESTED",
+    (l: any) => l.responseStatus === "INTERESTED",
   ).length;
   const followUpCount = leads.filter(
-    (l) => l.responseStatus === "CALL_LATER" && !l.followUpDone,
+    (l: any) => l.responseStatus === "CALL_LATER" && !l.followUpDone,
   ).length;
 
   return {
@@ -184,7 +184,7 @@ export async function getEmployeeDetail(employeeId: string, date?: string) {
       createdAt: employee.createdAt.toISOString(),
       updatedAt: employee.updatedAt.toISOString(),
     },
-    leads: leads.map((lead) => ({
+    leads: leads.map((lead: any) => ({
       ...lead,
       date: lead.date.toISOString().split("T")[0],
       slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
@@ -211,15 +211,7 @@ export async function getLeadsWithFilters(filters: {
   slotBooked?: string;
   isFlagged?: boolean;
 }) {
-  const where: {
-    date?: { gte?: Date; lte?: Date };
-    employeeId?: string;
-    responseStatus?: string;
-    slotRequested?: boolean;
-    slotDate?: { not: null } | null;
-    OR?: { slotRequested?: boolean; slotDate?: null }[];
-    isFlagged?: boolean;
-  } = {};
+  const where: any = {};
 
   if (filters.dateFrom && filters.dateTo) {
     where.date = {
@@ -262,8 +254,9 @@ export async function getLeadsWithFilters(filters: {
     take: 200,
   });
 
-  return leads.map((lead) => ({
+  return leads.map((lead: any) => ({
     ...lead,
+    phoneNumber: lead.phone ?? "",
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
@@ -286,8 +279,10 @@ export async function getPendingFollowUps() {
     orderBy: { date: "desc" },
   });
 
-  return leads.map((lead) => ({
+  return leads.map((lead: any) => ({
     ...lead,
+    contactPerson: lead.contactPerson ?? "",
+    phoneNumber: lead.phone ?? "",
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
@@ -313,8 +308,11 @@ export async function getUpcomingSlots() {
     orderBy: { slotDate: "asc" },
   });
 
-  return leads.map((lead) => ({
+  return leads.map((lead: any) => ({
     ...lead,
+    contactPerson: lead.contactPerson ?? "",
+    phoneNumber: lead.phone ?? "",
+    slotTime: null, // slotTime field not yet in schema
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
@@ -378,7 +376,7 @@ export async function getDateWiseReport(dateFrom: string, dateTo: string) {
     Record<string, { calls: number; slots: number; followUps: number }>
   > = {};
 
-  leads.forEach((lead) => {
+  leads.forEach((lead: any) => {
     const dateStr = lead.date.toISOString().split("T")[0];
     const empName = lead.employee.name;
 

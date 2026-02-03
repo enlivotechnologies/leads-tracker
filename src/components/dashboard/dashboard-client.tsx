@@ -88,6 +88,8 @@ export function DashboardClient({
   };
 
   const handleAddLead = async (data: LeadFormValues) => {
+    if (!selectedDate) return;
+    
     try {
       const dateString = getDateString(selectedDate);
       const newLead = await createLead(data, dateString);
@@ -129,7 +131,7 @@ export function DashboardClient({
 
       <main className="px-5 py-4 pb-28">
         {/* Date Selector - Only show for Today tab */}
-        {activeTab === "today" && (
+        {activeTab === "today" && selectedDate && (
           <div className="mb-4">
             <DateSelector
               selectedDate={selectedDate}
