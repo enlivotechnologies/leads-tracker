@@ -102,10 +102,6 @@ export default function LoginPage() {
             )}
           </Button>
         </form>
-
-        <p className="text-center text-sm text-gray-400 mt-8">
-          Internal use only • Contact admin for access
-        </p>
       </div>
     </div>
   );
