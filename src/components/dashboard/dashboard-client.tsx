@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import * as XLSX from "xlsx";
 import { Lead } from "@/lib/types";
 import { LeadFormValues } from "@/lib/validations";
 import { getDateString, isPastDate, isToday } from "@/lib/utils";
@@ -53,36 +52,6 @@ export function DashboardClient({
   const isPast = selectedDate ? isPastDate(selectedDate) : false;
   const isTodaySelected = selectedDate ? isToday(selectedDate) : false;
   const canAddLead = isTodaySelected && activeTab === "today";
-
-  const exportLeadToExcel = useCallback((lead: Lead) => {
-    try {
-      const row = {
-        id: lead.id,
-        date: lead.date,
-        collegeName: lead.collegeName,
-        location: lead.location ?? "",
-        contactPerson: lead.contactPerson ?? "",
-        designation: lead.designation ?? "",
-        phone: lead.phone ?? "",
-        callType: lead.callType,
-        slotRequested: lead.slotRequested ? "YES" : "NO",
-        slotDate: lead.slotDate ?? "",
-        responseStatus: lead.responseStatus,
-        remarks: lead.remarks ?? "",
-        createdAt: lead.createdAt,
-      };
-
-      const worksheet = XLSX.utils.json_to_sheet([row]);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Leads");
-
-      const safeDate = lead.date.replaceAll("/", "-");
-      const filename = `lead-${safeDate}-${lead.id}.xlsx`;
-      XLSX.writeFile(workbook, filename);
-    } catch (error) {
-      console.error("Failed to export lead to Excel:", error);
-    }
-  }, []);
 
   const fetchLeadsForDate = useCallback(
     async (date: Date) => {
@@ -161,7 +130,6 @@ export function DashboardClient({
       const dateString = getDateString(selectedDate);
       const newLead = await createLead(data, dateString);
       setTodayLeads((prev) => [newLead, ...prev]);
-      exportLeadToExcel(newLead);
       setIsAddingLead(false);
     } catch (error) {
       console.error("Error creating lead:", error);
