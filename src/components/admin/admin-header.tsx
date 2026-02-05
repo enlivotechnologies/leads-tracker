@@ -56,7 +56,12 @@ export function AdminHeader({ admin }: AdminHeaderProps) {
   }, []);
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+      window.location.href = "/login";
+    }
   };
 
   // Get first name only

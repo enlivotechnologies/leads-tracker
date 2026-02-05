@@ -30,16 +30,16 @@ export function KpiCards({ kpis }: KpiCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
       {cards.map((card) => (
         <div
           key={card.label}
-          className="bg-white rounded-2xl px-5 py-6 border border-slate-200"
+          className="bg-white rounded-xl px-4 py-4 border border-slate-200"
         >
-          <p className="text-4xl font-semibold text-slate-700 tracking-tight">
+          <p className="text-3xl font-semibold text-slate-700 tracking-tight">
             {card.value}
           </p>
-          <p className="text-sm text-slate-500 mt-2 font-medium">
+          <p className="text-xs text-slate-500 mt-1.5 font-medium">
             {card.label}
           </p>
         </div>

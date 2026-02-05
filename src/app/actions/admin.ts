@@ -66,8 +66,9 @@ export async function getDashboardKPIs(date: string) {
       // Follow-ups pending (all time, not completed)
       prisma.lead.count({
         where: {
-          responseStatus: "CALL_LATER",
+          followUpDate: { not: null },
           followUpDone: false,
+          OR: [{ slotDate: null }, { slotRequested: false }],
         },
       }),
 
@@ -270,8 +271,9 @@ export async function getLeadsWithFilters(filters: {
 export async function getPendingFollowUps() {
   const leads = await prisma.lead.findMany({
     where: {
-      responseStatus: "CALL_LATER",
+      followUpDate: { not: null },
       followUpDone: false,
+      OR: [{ slotDate: null }, { slotRequested: false }],
     },
     include: {
       employee: {
@@ -287,6 +289,7 @@ export async function getPendingFollowUps() {
     phoneNumber: lead.phone ?? "",
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
+    followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));

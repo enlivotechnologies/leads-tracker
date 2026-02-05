@@ -114,7 +114,7 @@ export function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
   ];
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+    <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
@@ -123,15 +123,15 @@ export function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={`
-              flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200
+              flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200
               ${
                 isActive
-                  ? "bg-blue-500 text-white"
-                  : "bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600"
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/60 ring-1 ring-blue-500/30"
+                  : "bg-white/80 text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm"
               }
             `}
           >
-            <Icon className="w-4 h-4" />
+            <Icon className="w-3.5 h-3.5" />
             {tab.label}
           </button>
         );
