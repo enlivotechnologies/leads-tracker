@@ -226,6 +226,10 @@ export function DashboardClient({
       const dateString = getDateString(selectedDate);
       const newLead = await createLead(data, dateString);
       setTodayLeads((prev) => [newLead, ...prev]);
+      setDateLeadsCache((prev) => ({
+        ...prev,
+        [dateString]: [newLead, ...(prev[dateString] ?? [])],
+      }));
       setToast({ message: "Lead added successfully", type: "success" });
       setIsAddingLead(false);
     } catch (error) {
