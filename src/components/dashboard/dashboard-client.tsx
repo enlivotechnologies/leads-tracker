@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Lead } from "@/lib/types";
 import { LeadFormValues } from "@/lib/validations";
 import { getDateString, isPastDate, isToday } from "@/lib/utils";
@@ -48,6 +48,10 @@ export function DashboardClient({
   const [lastFetchedDate, setLastFetchedDate] = useState<string | null>(
     initialDate,
   );
+  const [dateLeadsCache, setDateLeadsCache] = useState<Record<string, Lead[]>>({
+    [initialDate]: initialLeads,
+  });
+  const inFlightRef = useRef<Record<string, Promise<Lead[]>>>({});
   const [completingFollowUp, setCompletingFollowUp] = useState<string | null>(
     null,
   );
@@ -65,18 +69,29 @@ export function DashboardClient({
   const fetchLeadsForDate = useCallback(
     async (date: Date) => {
       const dateString = getDateString(date);
+      if (dateLeadsCache[dateString]) {
+        setTodayLeads(dateLeadsCache[dateString]);
+        setLastFetchedDate(dateString);
+        return;
+      }
       if (lastFetchedDate === dateString && todayLeads.length > 0) {
         return;
       }
       try {
-        const leads = await getLeadsByDate(dateString);
+        if (!inFlightRef.current[dateString]) {
+          inFlightRef.current[dateString] = getLeadsByDate(dateString);
+        }
+        const leads = await inFlightRef.current[dateString];
         setTodayLeads(leads);
         setLastFetchedDate(dateString);
+        setDateLeadsCache((prev) => ({ ...prev, [dateString]: leads }));
+        delete inFlightRef.current[dateString];
       } catch (error) {
         console.error("Error fetching leads:", error);
+        delete inFlightRef.current[dateString];
       }
     },
-    [getLeadsByDate, lastFetchedDate, todayLeads.length],
+    [getLeadsByDate, lastFetchedDate, todayLeads.length, dateLeadsCache],
   );
 
   const fetchAllLeads = useCallback(async () => {
@@ -150,14 +165,59 @@ export function DashboardClient({
       return () => (window as any).cancelIdleCallback?.(idleId);
     }
 
-    const timeoutId = window.setTimeout(prefetch, 600);
-    return () => window.clearTimeout(timeoutId);
+    const timeoutId = setTimeout(prefetch, 600);
+    return () => clearTimeout(timeoutId);
   }, [selectedDate, fetchAllLeads, fetchFollowUps, fetchCollegeCalls]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
     setActiveTab("today");
+    const dateString = getDateString(date);
+    if (dateLeadsCache[dateString]) {
+      setTodayLeads(dateLeadsCache[dateString]);
+      setLastFetchedDate(dateString);
+    }
   };
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const prefetchDate = async (date: Date) => {
+      const dateString = getDateString(date);
+      if (dateLeadsCache[dateString]) return;
+      try {
+        if (!inFlightRef.current[dateString]) {
+          inFlightRef.current[dateString] = getLeadsByDate(dateString);
+        }
+        const leads = await inFlightRef.current[dateString];
+        setDateLeadsCache((prev) => ({ ...prev, [dateString]: leads }));
+        delete inFlightRef.current[dateString];
+      } catch {
+        delete inFlightRef.current[dateString];
+        // ignore prefetch errors
+      }
+    };
+
+    const range: Date[] = [];
+    for (let offset = -3; offset <= 3; offset += 1) {
+      if (offset === 0) continue;
+      const d = new Date(selectedDate);
+      d.setDate(d.getDate() + offset);
+      range.push(d);
+    }
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const idleId = (window as any).requestIdleCallback(() => {
+        range.forEach(prefetchDate);
+      });
+      return () => (window as any).cancelIdleCallback?.(idleId);
+    }
+
+    const timeoutId = setTimeout(() => {
+      range.forEach(prefetchDate);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedDate, getLeadsByDate, dateLeadsCache]);
 
   const handleAddLead = async (data: LeadFormValues) => {
     if (!selectedDate) return;
