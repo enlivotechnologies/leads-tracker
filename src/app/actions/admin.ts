@@ -316,6 +316,7 @@ export async function getLeadsWithFilters(filters: {
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
+    followUpDone: lead.followUpDone,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));

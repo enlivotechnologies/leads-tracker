@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, Calendar, X } from "lucide-react";
 import { getLeadsWithFilters } from "@/app/actions/admin";
 
@@ -24,6 +24,7 @@ interface Lead {
   slotTime: string | null;
   date: string;
   followUpDate: string | null;
+  followUpDone: boolean;
   adminRemarks: string | null;
   employee: { name: string; email: string };
 }
@@ -41,16 +42,45 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
     slotBooked: "",
   });
 
-  useEffect(() => {
-    loadLeads();
-  }, []);
-
-  const loadLeads = async () => {
+  const loadLeads = useCallback(async () => {
     setLoading(true);
     const result = await getLeadsWithFilters(filters);
     setLeads(result);
     setLoading(false);
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    loadLeads();
+  }, [loadLeads]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const refresh = async () => {
+      try {
+        const result = await getLeadsWithFilters(filters);
+        if (isMounted) setLeads(result);
+      } catch (error) {
+        console.error("Failed to refresh leads:", error);
+      }
+    };
+
+    const interval = setInterval(refresh, 8000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [filters]);
 
   const handleApplyFilters = () => {
     setShowFilters(false);
@@ -58,8 +88,11 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
   };
 
   const filteredLeads = leads
-    .filter((lead) => lead.responseStatus !== "CALL_LATER")
-    .filter((lead) => !lead.followUpDate)
+    .filter(
+      (lead) =>
+        lead.responseStatus !== "CALL_LATER" || lead.followUpDone === true,
+    )
+    .filter((lead) => !(lead.followUpDate && !lead.followUpDone))
     .filter((lead) => {
       if (!search) return true;
       const searchLower = search.toLowerCase();
@@ -82,6 +115,13 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
       default:
         return "bg-slate-100 text-slate-700";
     }
+  };
+
+  const getStatusLabel = (lead: Lead) => {
+    if (lead.responseStatus === "CALL_LATER" && lead.followUpDone) {
+      return "Follow up completed";
+    }
+    return lead.responseStatus.replace("_", " ");
   };
 
   return (
@@ -116,7 +156,7 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
       ) : filteredLeads.length === 0 ? (
         <div className="p-8 text-center text-slate-500">No leads found</div>
       ) : (
-        <div className="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
+        <div className="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto scroll-smooth">
           {filteredLeads.map((lead) => (
             <div key={lead.id} className="p-4">
               <div className="flex items-start justify-between">
@@ -141,9 +181,13 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span
-                    className={`text-xs px-2 py-1 rounded-full ${getStatusColor(lead.responseStatus)}`}
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      lead.responseStatus === "CALL_LATER" && lead.followUpDone
+                        ? "bg-emerald-100 text-emerald-700"
+                        : getStatusColor(lead.responseStatus)
+                    }`}
                   >
-                    {lead.responseStatus.replace("_", " ")}
+                    {getStatusLabel(lead)}
                   </span>
                   {lead.slotDate && (
                     <span className="text-xs text-teal-600 flex items-center gap-1">

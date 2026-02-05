@@ -35,6 +35,16 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
     }
   };
 
+  const statusLabel =
+    lead.responseStatus === "CALL_LATER" && lead.followUpDone
+      ? "Follow up completed"
+      : getStatusLabel(lead.responseStatus);
+
+  const statusStyle =
+    lead.responseStatus === "CALL_LATER" && lead.followUpDone
+      ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+      : getStatusStyles(lead.responseStatus);
+
   const formatSlotDate = (dateStr: string) => {
     const date = new Date(dateStr + "T00:00:00");
     return date.toLocaleDateString("en-IN", {
@@ -68,10 +78,10 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
         <span
           className={cn(
             "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap",
-            getStatusStyles(lead.responseStatus),
+            statusStyle,
           )}
         >
-          {getStatusLabel(lead.responseStatus)}
+          {statusLabel}
         </span>
       </div>
 

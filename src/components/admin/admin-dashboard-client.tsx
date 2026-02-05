@@ -9,7 +9,10 @@ import { LeadsPanel } from "./leads-panel";
 import { FollowUpsPanel } from "./follow-ups-panel";
 import { SlotsPanel } from "./slots-panel";
 import { AdminDateSelector } from "./admin-date-selector";
-import { getPendingFollowUps } from "@/app/actions/admin";
+import {
+  getPendingFollowUps,
+  getEmployeePerformance,
+} from "@/app/actions/admin";
 
 interface AdminDashboardClientProps {
   admin: {
@@ -77,10 +80,15 @@ export function AdminDashboardClient({
     "employees" | "leads" | "followups" | "slots" | "users"
   >("employees");
   const [followUps, setFollowUps] = useState(pendingFollowUps);
+  const [teamRows, setTeamRows] = useState(employeePerformance);
 
   useEffect(() => {
     setFollowUps(pendingFollowUps);
   }, [pendingFollowUps]);
+
+  useEffect(() => {
+    setTeamRows(employeePerformance);
+  }, [employeePerformance]);
 
   useEffect(() => {
     if (activeTab !== "followups") return;
@@ -114,6 +122,38 @@ export function AdminDashboardClient({
     };
   }, [activeTab]);
 
+  useEffect(() => {
+    if (activeTab !== "employees") return;
+
+    let isMounted = true;
+    const fetchLatest = async () => {
+      try {
+        const latest = await getEmployeePerformance(selectedDate);
+        if (isMounted) setTeamRows(latest);
+      } catch (error) {
+        console.error("Failed to refresh team:", error);
+      }
+    };
+
+    fetchLatest();
+    const interval = setInterval(fetchLatest, 8000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchLatest();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", fetchLatest);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", fetchLatest);
+    };
+  }, [activeTab, selectedDate]);
+
   return (
     <div className="min-h-screen bg-white">
       <AdminHeader admin={admin} />
@@ -132,7 +172,7 @@ export function AdminDashboardClient({
         <div className="mt-4">
           {activeTab === "employees" && (
             <EmployeeTable
-              employees={employeePerformance}
+              employees={teamRows}
               allEmployees={allEmployees}
               selectedDate={selectedDate}
             />
