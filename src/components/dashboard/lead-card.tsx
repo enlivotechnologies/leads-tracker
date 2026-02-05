@@ -43,6 +43,14 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
     });
   };
 
+  const formatFollowUpDate = (dateStr: string) => {
+    const date = new Date(dateStr + "T00:00:00");
+    return date.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+    });
+  };
+
   return (
     <div
       className={cn(
@@ -89,7 +97,7 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
       )}
 
       {/* Slot Date & Phone */}
-      {(lead.slotDate || lead.phone) && (
+      {(lead.slotDate || lead.phone || lead.followUpDate) && (
         <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
           {lead.slotDate && (
             <div className="flex items-center gap-1.5">
@@ -110,6 +118,26 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
               <span>Slot: {formatSlotDate(lead.slotDate)}</span>
+            </div>
+          )}
+
+          {lead.followUpDate && (
+            <div className="flex items-center gap-1.5">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-gray-400"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span>Follow-up: {formatFollowUpDate(lead.followUpDate)}</span>
             </div>
           )}
 

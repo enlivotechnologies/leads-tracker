@@ -213,7 +213,7 @@ export function AddLeadForm({ onSubmit, onCancel }: AddLeadFormProps) {
       </div>
 
       {/* Designation & Phone - Row */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="designation">Designation</Label>
           <Select
@@ -234,30 +234,31 @@ export function AddLeadForm({ onSubmit, onCancel }: AddLeadFormProps) {
         </div>
       </div>
 
-      {/* Call Type */}
-      <div className="space-y-2">
-        <Label htmlFor="callType">Call Type</Label>
-        <Select
-          id="callType"
-          options={CALL_TYPE_OPTIONS}
-          {...register("callType")}
-        />
-      </div>
-
-      {/* Follow-up Date - Conditional */}
-      {callType === "FOLLOW_UP" && (
-        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-          <Label htmlFor="followUpDate">
-            Follow-up Date <span className="text-red-500">*</span>
-          </Label>
-          <Input id="followUpDate" type="date" {...register("followUpDate")} />
-          {errors.followUpDate && (
-            <p className="text-sm text-red-500">
-              {errors.followUpDate.message}
-            </p>
-          )}
+      {/* Call Type & Follow-up Date */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="callType">Call Type</Label>
+          <Select
+            id="callType"
+            options={CALL_TYPE_OPTIONS}
+            {...register("callType")}
+          />
         </div>
-      )}
+
+        {callType === "FOLLOW_UP" && (
+          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+            <Label htmlFor="followUpDate">
+              Follow-up Date <span className="text-red-500">*</span>
+            </Label>
+            <Input id="followUpDate" type="date" {...register("followUpDate")} />
+            {errors.followUpDate && (
+              <p className="text-sm text-red-500">
+                {errors.followUpDate.message}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Response Status */}
       <div className="space-y-2">
