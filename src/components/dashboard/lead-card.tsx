@@ -46,10 +46,9 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
   return (
     <div
       className={cn(
-        "bg-white rounded-2xl p-5 shadow-sm border border-gray-100",
+        "bg-white rounded-2xl p-5 border border-slate-200",
         "transition-all duration-200",
-        onClick &&
-          "cursor-pointer hover:shadow-md hover:border-gray-200 active:scale-[0.98]",
+        onClick && "cursor-pointer hover:border-gray-200 active:scale-[0.98]",
       )}
       onClick={onClick}
     >

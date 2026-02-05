@@ -114,10 +114,7 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
       ) : (
         <div className="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
           {filteredLeads.map((lead) => (
-            <div
-              key={lead.id}
-              className="p-4"
-            >
+            <div key={lead.id} className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -131,6 +128,12 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
                   <p className="text-xs text-slate-500">
                     By {lead.employee.name} on {lead.date}
                   </p>
+                  <div className="mt-1 text-xs text-slate-500 flex flex-wrap gap-2">
+                    <span>
+                      Seminar: {lead.slotRequested ? "Booked" : "Not booked"}
+                    </span>
+                    <span>Seminar Date: {lead.slotDate ?? "—"}</span>
+                  </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span
@@ -141,7 +144,7 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
                   {lead.slotDate && (
                     <span className="text-xs text-teal-600 flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {lead.slotDate}
+                      Seminar on {lead.slotDate}
                     </span>
                   )}
                 </div>
@@ -245,7 +248,7 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
 
               <div>
                 <label className="text-xs text-slate-500 mb-1 block">
-                  Slot Booked
+                  Seminar Booked
                 </label>
                 <select
                   value={filters.slotBooked}

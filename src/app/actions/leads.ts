@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { createClient } from "@/lib/supabase/server";
 import { LeadFormValues } from "@/lib/validations";
 
@@ -57,16 +58,6 @@ export async function getOrCreateEmployee() {
   return employee;
 }
 
-// Helper to check if a date string is today
-function isTodayDate(dateStr: string): boolean {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  const todayStr = `${year}-${month}-${day}`;
-  return dateStr === todayStr;
-}
-
 export async function getLeadsByDate(date: string) {
   const supabase = await createClient();
   const {
@@ -86,23 +77,10 @@ export async function getLeadsByDate(date: string) {
   }
 
   const targetDate = parseLocalDate(date);
-  const isToday = isTodayDate(date);
-
-  // For today: show all leads
-  // For past dates: show only completed leads (INTERESTED or NOT_INTERESTED)
-  const whereClause: any = isToday
-    ? {
-        employeeId: employee.id,
-        date: targetDate,
-      }
-    : {
-        employeeId: employee.id,
-        date: targetDate,
-        OR: [
-          { responseStatus: "INTERESTED" },
-          { responseStatus: "NOT_INTERESTED" },
-        ],
-      };
+  const whereClause: any = {
+    employeeId: employee.id,
+    date: targetDate,
+  };
 
   const leads = await prisma.lead.findMany({
     where: whereClause,
@@ -118,6 +96,74 @@ export async function getLeadsByDate(date: string) {
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));
+}
+
+export async function getCollegeCallSummary() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const employee = await prisma.employee.findUnique({
+    where: { userId: user.id },
+  });
+
+  if (!employee) {
+    return [];
+  }
+
+  const grouped = await prisma.lead.groupBy({
+    by: ["collegeName", "location"],
+    where: { employeeId: employee.id },
+    _count: { _all: true },
+    orderBy: {
+      _count: {
+        collegeName: "desc",
+      },
+    },
+  });
+
+  return grouped.map((item) => ({
+    collegeName: item.collegeName,
+    location: item.location ?? "",
+    count: item._count._all,
+  }));
+}
+
+export async function checkCollegeAvailability(collegeName: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const employee = await prisma.employee.findUnique({
+    where: { userId: user.id },
+  });
+
+  if (!employee) {
+    throw new Error("Employee not found");
+  }
+
+  const existingLead = await prisma.lead.findFirst({
+    where: {
+      collegeName: {
+        equals: collegeName.trim(),
+        mode: "insensitive",
+      },
+      employeeId: { not: employee.id },
+    },
+    select: { id: true },
+  });
+
+  return { available: !existingLead };
 }
 
 export async function getFollowUpLeads() {
@@ -253,24 +299,50 @@ export async function createLead(data: LeadFormValues, dateString: string) {
     throw new Error("Employee not found");
   }
 
+  const existingLead = await prisma.lead.findFirst({
+    where: {
+      collegeName: {
+        equals: data.collegeName.trim(),
+        mode: "insensitive",
+      },
+      employeeId: { not: employee.id },
+    },
+    select: { id: true },
+  });
+
+  if (existingLead) {
+    throw new Error("College already contacted by another employee");
+  }
+
   const leadDate = parseLocalDate(dateString);
 
-  const lead = await prisma.lead.create({
-    data: {
-      employeeId: employee.id,
-      date: leadDate,
-      collegeName: data.collegeName,
-      location: data.location || null,
-      contactPerson: data.contactPerson || null,
-      designation: data.designation || null,
-      phone: data.phone || null,
-      callType: data.callType,
-      slotRequested: data.slotRequested,
-      slotDate: data.slotDate ? parseLocalDate(data.slotDate) : null,
-      responseStatus: data.responseStatus,
-      remarks: data.remarks || null,
-    },
-  });
+  let lead;
+  try {
+    lead = await prisma.lead.create({
+      data: {
+        employeeId: employee.id,
+        date: leadDate,
+        collegeName: data.collegeName.trim(),
+        location: data.location || null,
+        contactPerson: data.contactPerson || null,
+        designation: data.designation || null,
+        phone: data.phone || null,
+        callType: data.callType,
+        slotRequested: data.slotRequested,
+        slotDate: data.slotDate ? parseLocalDate(data.slotDate) : null,
+        followUpDate: data.followUpDate
+          ? parseLocalDate(data.followUpDate)
+          : null,
+        responseStatus: data.responseStatus,
+        remarks: data.remarks || null,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientValidationError) {
+      throw new Error("Unable to save lead. Please check all fields.");
+    }
+    throw error;
+  }
 
   revalidatePath("/dashboard");
 
@@ -278,6 +350,7 @@ export async function createLead(data: LeadFormValues, dateString: string) {
     ...lead,
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
+    followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };
@@ -324,6 +397,9 @@ export async function updateLead(id: string, data: Partial<LeadFormValues>) {
       callType: data.callType,
       slotRequested: data.slotRequested,
       slotDate: data.slotDate ? parseLocalDate(data.slotDate) : null,
+      followUpDate: data.followUpDate
+        ? parseLocalDate(data.followUpDate)
+        : null,
       responseStatus: data.responseStatus,
       remarks: data.remarks || null,
     },
@@ -335,6 +411,7 @@ export async function updateLead(id: string, data: Partial<LeadFormValues>) {
     ...lead,
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
+    followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };

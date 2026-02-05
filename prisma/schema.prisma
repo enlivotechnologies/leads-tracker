@@ -42,6 +42,7 @@ model Lead {
   adminRemarks    String?        @map("admin_remarks")
   isFlagged       Boolean        @default(false) @map("is_flagged")
   followUpDone    Boolean        @default(false) @map("follow_up_done")
+  followUpDate    DateTime?      @db.Date @map("follow_up_date")
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 

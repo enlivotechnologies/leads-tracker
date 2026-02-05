@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import * as XLSX from "xlsx";
 import { Lead } from "@/lib/types";
 import { LeadFormValues } from "@/lib/validations";
 import { getDateString, isPastDate, isToday } from "@/lib/utils";
@@ -15,6 +16,7 @@ import {
   getLeadsByDate,
   getAllEmployeeLeads,
   createLead,
+  getCollegeCallSummary,
 } from "@/app/actions/leads";
 
 interface DashboardClientProps {
@@ -35,6 +37,12 @@ export function DashboardClient({
 
   const [todayLeads, setTodayLeads] = useState<Lead[]>(initialLeads);
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [collegeCalls, setCollegeCalls] = useState<
+    { collegeName: string; location: string; count: number }[]
+  >([]);
+  const [lastFetchedDate, setLastFetchedDate] = useState<string | null>(
+    initialDate,
+  );
 
   // Initialize date from server string on mount
   useEffect(() => {
@@ -46,20 +54,58 @@ export function DashboardClient({
   const isTodaySelected = selectedDate ? isToday(selectedDate) : false;
   const canAddLead = isTodaySelected && activeTab === "today";
 
-  const fetchLeadsForDate = useCallback(async (date: Date) => {
-    setIsLoading(true);
+  const exportLeadToExcel = useCallback((lead: Lead) => {
     try {
-      const dateString = getDateString(date);
-      const leads = await getLeadsByDate(dateString);
-      setTodayLeads(leads);
+      const row = {
+        id: lead.id,
+        date: lead.date,
+        collegeName: lead.collegeName,
+        location: lead.location ?? "",
+        contactPerson: lead.contactPerson ?? "",
+        designation: lead.designation ?? "",
+        phone: lead.phone ?? "",
+        callType: lead.callType,
+        slotRequested: lead.slotRequested ? "YES" : "NO",
+        slotDate: lead.slotDate ?? "",
+        responseStatus: lead.responseStatus,
+        remarks: lead.remarks ?? "",
+        createdAt: lead.createdAt,
+      };
+
+      const worksheet = XLSX.utils.json_to_sheet([row]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Leads");
+
+      const safeDate = lead.date.replaceAll("/", "-");
+      const filename = `lead-${safeDate}-${lead.id}.xlsx`;
+      XLSX.writeFile(workbook, filename);
     } catch (error) {
-      console.error("Error fetching leads:", error);
-    } finally {
-      setIsLoading(false);
+      console.error("Failed to export lead to Excel:", error);
     }
   }, []);
 
+  const fetchLeadsForDate = useCallback(
+    async (date: Date) => {
+      const dateString = getDateString(date);
+      if (lastFetchedDate === dateString && todayLeads.length > 0) {
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const leads = await getLeadsByDate(dateString);
+        setTodayLeads(leads);
+        setLastFetchedDate(dateString);
+      } catch (error) {
+        console.error("Error fetching leads:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [getLeadsByDate, lastFetchedDate, todayLeads.length],
+  );
+
   const fetchAllLeads = useCallback(async () => {
+    if (allLeads.length > 0) return;
     setIsLoading(true);
     try {
       const leads = await getAllEmployeeLeads();
@@ -69,7 +115,20 @@ export function DashboardClient({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [allLeads.length, getAllEmployeeLeads]);
+
+  const fetchCollegeCalls = useCallback(async () => {
+    if (collegeCalls.length > 0) return;
+    setIsLoading(true);
+    try {
+      const result = await getCollegeCallSummary();
+      setCollegeCalls(result);
+    } catch (error) {
+      console.error("Error fetching college calls:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [collegeCalls.length, getCollegeCallSummary]);
 
   // Fetch leads when tab changes
   useEffect(() => {
@@ -79,8 +138,16 @@ export function DashboardClient({
       fetchLeadsForDate(selectedDate);
     } else if (activeTab === "all") {
       fetchAllLeads();
+    } else if (activeTab === "colleges") {
+      fetchCollegeCalls();
     }
-  }, [selectedDate, activeTab, fetchLeadsForDate, fetchAllLeads]);
+  }, [
+    selectedDate,
+    activeTab,
+    fetchLeadsForDate,
+    fetchAllLeads,
+    fetchCollegeCalls,
+  ]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -94,10 +161,15 @@ export function DashboardClient({
       const dateString = getDateString(selectedDate);
       const newLead = await createLead(data, dateString);
       setTodayLeads((prev) => [newLead, ...prev]);
+      exportLeadToExcel(newLead);
       setIsAddingLead(false);
     } catch (error) {
       console.error("Error creating lead:", error);
-      alert("Failed to save lead. Please try again.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to save lead. Please try again.";
+      alert(message);
     }
   };
 
@@ -105,8 +177,11 @@ export function DashboardClient({
     if (activeTab === "all") {
       return "No leads recorded yet";
     }
+    if (activeTab === "colleges") {
+      return "No colleges recorded yet";
+    }
     if (isPast) {
-      return "No completed leads for this date";
+      return "No leads for this date";
     }
     return "No leads yet";
   };
@@ -125,6 +200,28 @@ export function DashboardClient({
     return todayLeads;
   };
 
+  const getKpis = () => {
+    const leads = getCurrentLeads();
+    const slotsBooked = leads.filter(
+      (lead) => lead.slotRequested && lead.slotDate,
+    ).length;
+    const notInterested = leads.filter(
+      (lead) => lead.responseStatus === "NOT_INTERESTED",
+    ).length;
+    const followUps = leads.filter(
+      (lead) => lead.responseStatus === "CALL_LATER" && !lead.slotDate,
+    ).length;
+
+    return {
+      totalLeads: leads.length,
+      slotsBooked,
+      notInterested,
+      followUps,
+    };
+  };
+
+  const kpis = getKpis();
+
   return (
     <div className="min-h-screen bg-white">
       <DashboardHeader employeeName={employeeName} />
@@ -140,6 +237,44 @@ export function DashboardClient({
           </div>
         )}
 
+        {/* KPI Cards - Today only */}
+        {activeTab === "today" && (
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            <div className="bg-white rounded-2xl px-4 py-4 border border-slate-200">
+              <p className="text-2xl font-semibold text-slate-700 tracking-tight">
+                {kpis.totalLeads}
+              </p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">
+                Today’s Leads
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl px-4 py-4 border border-slate-200">
+              <p className="text-2xl font-semibold text-slate-700 tracking-tight">
+                {kpis.slotsBooked}
+              </p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">
+                Slots Booked
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl px-4 py-4 border border-slate-200">
+              <p className="text-2xl font-semibold text-slate-700 tracking-tight">
+                {kpis.notInterested}
+              </p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">
+                Not Interested
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl px-4 py-4 border border-slate-200">
+              <p className="text-2xl font-semibold text-slate-700 tracking-tight">
+                {kpis.followUps}
+              </p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">
+                Follow-ups
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* All Leads Header */}
         {activeTab === "all" && (
           <div className="mb-4">
@@ -148,10 +283,22 @@ export function DashboardClient({
           </div>
         )}
 
+        {/* Colleges Header */}
+        {activeTab === "colleges" && (
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Colleges Called
+            </h2>
+            <p className="text-sm text-gray-500">
+              College name, location, and total calls
+            </p>
+          </div>
+        )}
+
         {/* Past Date Notice */}
         {isPast && activeTab === "today" && (
           <div className="mb-4 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700">
-            📅 Viewing past date - showing completed leads only
+            📅 Viewing past date - showing leads for that day
           </div>
         )}
 
@@ -160,6 +307,35 @@ export function DashboardClient({
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>
+        ) : activeTab === "colleges" ? (
+          collegeCalls.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">
+              {getEmptyMessage()}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {collegeCalls.map((college, index) => (
+                <div
+                  key={`${college.collegeName}-${college.location}-${index}`}
+                  className="bg-white rounded-2xl border border-slate-200 px-4 py-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">
+                        {college.collegeName}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {college.location || "Location not set"}
+                      </p>
+                    </div>
+                    <div className="text-lg font-semibold text-slate-700">
+                      {college.count}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : (
           <LeadsList
             leads={getCurrentLeads()}
