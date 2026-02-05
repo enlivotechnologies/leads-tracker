@@ -22,6 +22,7 @@ export interface Lead {
   slotRequested: boolean;
   slotDate: string | null;
   followUpDate?: string | null;
+  followUpDone?: boolean;
   responseStatus: ResponseStatus;
   remarks: string | null;
   createdAt: string;

@@ -7,6 +7,7 @@ import { getDateString, isPastDate, isToday } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { DateSelector } from "@/components/dashboard/date-selector";
 import { LeadsList } from "@/components/dashboard/leads-list";
+import { FollowUpsList } from "@/components/dashboard/follow-ups-list";
 import { AddLeadForm } from "@/components/dashboard/add-lead-form";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -16,6 +17,8 @@ import {
   getAllEmployeeLeads,
   createLead,
   getCollegeCallSummary,
+  getFollowUpLeads,
+  markFollowUpCompleted,
 } from "@/app/actions/leads";
 
 interface DashboardClientProps {
@@ -40,11 +43,15 @@ export function DashboardClient({
 
   const [todayLeads, setTodayLeads] = useState<Lead[]>(initialLeads);
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [followUpLeads, setFollowUpLeads] = useState<Lead[]>([]);
   const [collegeCalls, setCollegeCalls] = useState<
     { collegeName: string; location: string; count: number }[]
   >([]);
   const [lastFetchedDate, setLastFetchedDate] = useState<string | null>(
     initialDate,
+  );
+  const [completingFollowUp, setCompletingFollowUp] = useState<string | null>(
+    null,
   );
 
   // Initialize date from server string on mount
@@ -103,6 +110,19 @@ export function DashboardClient({
     }
   }, [collegeCalls.length, getCollegeCallSummary]);
 
+  const fetchFollowUps = useCallback(async () => {
+    if (followUpLeads.length > 0) return;
+    setIsLoading(true);
+    try {
+      const leads = await getFollowUpLeads();
+      setFollowUpLeads(leads);
+    } catch (error) {
+      console.error("Error fetching follow-ups:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [followUpLeads.length, getFollowUpLeads]);
+
   // Fetch leads when tab changes
   useEffect(() => {
     if (!selectedDate) return;
@@ -111,6 +131,8 @@ export function DashboardClient({
       fetchLeadsForDate(selectedDate);
     } else if (activeTab === "all") {
       fetchAllLeads();
+    } else if (activeTab === "followups") {
+      fetchFollowUps();
     } else if (activeTab === "colleges") {
       fetchCollegeCalls();
     }
@@ -119,6 +141,7 @@ export function DashboardClient({
     activeTab,
     fetchLeadsForDate,
     fetchAllLeads,
+    fetchFollowUps,
     fetchCollegeCalls,
   ]);
 
@@ -146,6 +169,23 @@ export function DashboardClient({
     }
   };
 
+  const handleFollowUpCompleted = async (leadId: string) => {
+    setCompletingFollowUp(leadId);
+    try {
+      await markFollowUpCompleted(leadId);
+      setFollowUpLeads((prev) => prev.filter((lead) => lead.id !== leadId));
+      setToast({ message: "Follow-up marked as completed", type: "success" });
+    } catch (error) {
+      console.error("Error completing follow-up:", error);
+      setToast({
+        message: "Failed to complete follow-up. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setCompletingFollowUp(null);
+    }
+  };
+
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 2500);
@@ -158,6 +198,9 @@ export function DashboardClient({
     }
     if (activeTab === "colleges") {
       return "No colleges recorded yet";
+    }
+    if (activeTab === "followups") {
+      return "No pending follow-ups";
     }
     if (isPast) {
       return "No leads for this date";
@@ -188,7 +231,7 @@ export function DashboardClient({
       (lead) => lead.responseStatus === "NOT_INTERESTED",
     ).length;
     const followUps = leads.filter(
-      (lead) => !!lead.followUpDate && !lead.slotDate,
+      (lead) => !!lead.followUpDate && !lead.slotDate && !lead.followUpDone,
     ).length;
 
     return {
@@ -273,6 +316,18 @@ export function DashboardClient({
           </div>
         )}
 
+        {/* Follow-ups Header */}
+        {activeTab === "followups" && (
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Follow-ups
+            </h2>
+            <p className="text-sm text-gray-500">
+              Pending follow-ups that need action
+            </p>
+          </div>
+        )}
+
         {/* Colleges Header */}
         {activeTab === "colleges" && (
           <div className="mb-4">
@@ -295,7 +350,9 @@ export function DashboardClient({
         {/* Leads List */}
         {isLoading &&
         ((activeTab === "colleges" && collegeCalls.length === 0) ||
-          (activeTab !== "colleges" && getCurrentLeads().length === 0)) ? (
+          (activeTab === "followups" && followUpLeads.length === 0) ||
+          (activeTab !== "colleges" && activeTab !== "followups" &&
+            getCurrentLeads().length === 0)) ? (
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>
@@ -332,6 +389,17 @@ export function DashboardClient({
                 ))}
               </div>
             )}
+          </>
+        ) : activeTab === "followups" ? (
+          <>
+            {isLoading && (
+              <div className="mb-3 text-xs text-slate-500">Updating…</div>
+            )}
+            <FollowUpsList
+              leads={followUpLeads}
+              onComplete={handleFollowUpCompleted}
+              completingId={completingFollowUp}
+            />
           </>
         ) : (
           <>

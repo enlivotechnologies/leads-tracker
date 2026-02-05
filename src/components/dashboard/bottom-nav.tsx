@@ -45,12 +45,12 @@ export function BottomNav({
           </svg>
         </button>
 
-        <div className="flex items-center justify-between rounded-full bg-white shadow-lg shadow-black/10 border border-gray-100 px-2 py-2">
+        <div className="flex items-center justify-between rounded-full bg-white shadow-lg shadow-black/10 border border-gray-100 px-1.5 py-1.5">
           {/* Today's Leads Tab */}
           <button
             onClick={() => onTabChange("today")}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all",
+              "flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition-all",
               activeTab === "today"
                 ? "bg-gray-100 text-gray-900"
                 : "text-gray-500 hover:text-gray-700",
@@ -79,7 +79,7 @@ export function BottomNav({
           <button
             onClick={() => onTabChange("all")}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all",
+              "flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition-all",
               activeTab === "all"
                 ? "bg-gray-100 text-gray-900"
                 : "text-gray-500 hover:text-gray-700",
@@ -104,11 +104,37 @@ export function BottomNav({
             <span>Leads</span>
           </button>
 
+          {/* Follow-ups Tab */}
+          <button
+            onClick={() => onTabChange("followups")}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition-all",
+              activeTab === "followups"
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:text-gray-700",
+            )}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+            <span>Follow-up</span>
+          </button>
+
           {/* Colleges Tab */}
           <button
             onClick={() => onTabChange("colleges")}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all",
+              "flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition-all",
               activeTab === "colleges"
                 ? "bg-gray-100 text-gray-900"
                 : "text-gray-500 hover:text-gray-700",

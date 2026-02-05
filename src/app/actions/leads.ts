@@ -94,6 +94,7 @@ export async function getLeadsByDate(date: string) {
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
+    followUpDone: lead.followUpDone,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));
@@ -189,9 +190,11 @@ export async function getFollowUpLeads() {
     where: {
       employeeId: employee.id,
       responseStatus: "CALL_LATER",
+      followUpDate: { not: null },
+      followUpDone: false,
     },
     orderBy: {
-      date: "desc",
+      followUpDate: "asc",
     },
   });
 
@@ -200,6 +203,7 @@ export async function getFollowUpLeads() {
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
+    followUpDone: lead.followUpDone,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));
@@ -242,6 +246,7 @@ export async function getCompletedLeads() {
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
+    followUpDone: lead.followUpDone,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));
@@ -280,9 +285,43 @@ export async function getAllEmployeeLeads() {
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
+    followUpDone: lead.followUpDone,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));
+}
+
+export async function markFollowUpCompleted(leadId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const employee = await prisma.employee.findUnique({
+    where: { userId: user.id },
+  });
+
+  if (!employee) {
+    throw new Error("Employee not found");
+  }
+
+  const result = await prisma.lead.updateMany({
+    where: { id: leadId, employeeId: employee.id },
+    data: { followUpDone: true },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Lead not found");
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/admin");
+
+  return { success: true };
 }
 
 export async function createLead(data: LeadFormValues, dateString: string) {
@@ -355,6 +394,7 @@ export async function createLead(data: LeadFormValues, dateString: string) {
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
+    followUpDone: lead.followUpDone,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };
@@ -416,6 +456,7 @@ export async function updateLead(id: string, data: Partial<LeadFormValues>) {
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
+    followUpDone: lead.followUpDone,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };

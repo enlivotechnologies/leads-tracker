@@ -49,6 +49,7 @@ interface AdminDashboardClientProps {
     responseStatus: string;
     remarks: string | null;
     date: string;
+    followUpDate: string | null;
     employee: { name: string };
   }[];
   upcomingSlots: {
