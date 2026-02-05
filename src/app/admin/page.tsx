@@ -23,19 +23,11 @@ export default async function AdminPage({
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const selectedDate = params.date || today;
 
-  const [
-    kpis,
-    employeePerformance,
-    allEmployees,
-    pendingFollowUps,
-    upcomingSlots,
-  ] = await Promise.all([
-    getDashboardKPIs(selectedDate),
-    getEmployeePerformance(selectedDate),
-    getAllEmployeesSummary(),
-    getPendingFollowUps(),
-    getUpcomingSlots(),
-  ]);
+  const kpis = await getDashboardKPIs(selectedDate);
+  const employeePerformance = await getEmployeePerformance(selectedDate);
+  const allEmployees = await getAllEmployeesSummary();
+  const pendingFollowUps = await getPendingFollowUps();
+  const upcomingSlots = await getUpcomingSlots();
 
   return (
     <AdminDashboardClient

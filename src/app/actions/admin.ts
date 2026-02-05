@@ -48,7 +48,7 @@ export async function getDashboardKPIs(date: string) {
   const targetDate = parseLocalDate(date);
 
   const [totalCalls, slotsBooked, followUpsPending, totalDeals, totalUsers] =
-    await Promise.all([
+    await prisma.$transaction([
       // Total calls made today
       prisma.lead.count({
         where: { date: targetDate },
@@ -71,7 +71,7 @@ export async function getDashboardKPIs(date: string) {
         },
       }),
 
-      // Total deals till date (all leads)
+      // Total leads (all time)
       prisma.lead.count(),
 
       // Total users (employees) in database

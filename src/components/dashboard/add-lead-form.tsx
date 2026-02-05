@@ -250,7 +250,11 @@ export function AddLeadForm({ onSubmit, onCancel }: AddLeadFormProps) {
             <Label htmlFor="followUpDate">
               Follow-up Date <span className="text-red-500">*</span>
             </Label>
-            <Input id="followUpDate" type="date" {...register("followUpDate")} />
+            <Input
+              id="followUpDate"
+              type="date"
+              {...register("followUpDate")}
+            />
             {errors.followUpDate && (
               <p className="text-sm text-red-500">
                 {errors.followUpDate.message}

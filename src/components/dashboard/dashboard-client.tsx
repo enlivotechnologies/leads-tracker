@@ -33,6 +33,10 @@ export function DashboardClient({
   const [activeTab, setActiveTab] = useState("today");
   const [isAddingLead, setIsAddingLead] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const [todayLeads, setTodayLeads] = useState<Lead[]>(initialLeads);
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
@@ -130,6 +134,7 @@ export function DashboardClient({
       const dateString = getDateString(selectedDate);
       const newLead = await createLead(data, dateString);
       setTodayLeads((prev) => [newLead, ...prev]);
+      setToast({ message: "Lead added successfully", type: "success" });
       setIsAddingLead(false);
     } catch (error) {
       console.error("Error creating lead:", error);
@@ -137,9 +142,15 @@ export function DashboardClient({
         error instanceof Error
           ? error.message
           : "Failed to save lead. Please try again.";
-      alert(message);
+      setToast({ message, type: "error" });
     }
   };
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const getEmptyMessage = () => {
     if (activeTab === "all") {
@@ -195,6 +206,17 @@ export function DashboardClient({
       <DashboardHeader employeeName={employeeName} />
 
       <main className="px-5 py-4 pb-28">
+        {toast && (
+          <div
+            className={`mb-4 rounded-xl border px-4 py-3 text-sm font-medium ${
+              toast.type === "success"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                : "bg-rose-50 border-rose-200 text-rose-700"
+            }`}
+          >
+            {toast.message}
+          </div>
+        )}
         {/* Date Selector - Only show for Today tab */}
         {activeTab === "today" && selectedDate && (
           <div className="mb-4">
