@@ -5,7 +5,7 @@ interface KpiCardsProps {
     totalCalls: number;
     slotsBooked: number;
     followUpsPending: number;
-    activeEmployees: number;
+    totalDeals: number;
   };
 }
 
@@ -24,8 +24,8 @@ export function KpiCards({ kpis }: KpiCardsProps) {
       value: kpis.followUpsPending,
     },
     {
-      label: "Active Employees",
-      value: kpis.activeEmployees,
+      label: "Total Leads (All Time)",
+      value: kpis.totalDeals,
     },
   ];
 

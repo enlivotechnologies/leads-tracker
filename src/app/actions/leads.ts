@@ -93,6 +93,7 @@ export async function getLeadsByDate(date: string) {
     ...lead,
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
+    followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));
@@ -198,6 +199,7 @@ export async function getFollowUpLeads() {
     ...lead,
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
+    followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));
@@ -239,6 +241,7 @@ export async function getCompletedLeads() {
     ...lead,
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
+    followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));
@@ -276,6 +279,7 @@ export async function getAllEmployeeLeads() {
     ...lead,
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
+    followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));

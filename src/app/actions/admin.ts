@@ -47,7 +47,7 @@ export async function getAdmin() {
 export async function getDashboardKPIs(date: string) {
   const targetDate = parseLocalDate(date);
 
-  const [totalCalls, slotsBooked, followUpsPending, activeEmployees] =
+  const [totalCalls, slotsBooked, followUpsPending, totalDeals, totalUsers] =
     await Promise.all([
       // Total calls made today
       prisma.lead.count({
@@ -71,21 +71,19 @@ export async function getDashboardKPIs(date: string) {
         },
       }),
 
-      // Active employees today (made at least 1 call)
-      prisma.lead
-        .findMany({
-          where: { date: targetDate },
-          select: { employeeId: true },
-          distinct: ["employeeId"],
-        })
-        .then((result: any) => result.length),
+      // Total deals till date (all leads)
+      prisma.lead.count(),
+
+      // Total users (employees) in database
+      prisma.employee.count(),
     ]);
 
   return {
     totalCalls,
     slotsBooked,
     followUpsPending,
-    activeEmployees,
+    totalDeals,
+    totalUsers,
   };
 }
 

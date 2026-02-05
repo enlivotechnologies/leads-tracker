@@ -1,6 +1,6 @@
 "use client";
 
-type TabType = "employees" | "leads" | "followups" | "slots";
+type TabType = "employees" | "leads" | "followups" | "slots" | "users";
 
 interface AdminTabsProps {
   activeTab: TabType;
@@ -82,6 +82,24 @@ function SlotsIcon({ className }: { className?: string }) {
   );
 }
 
+function UsersIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M4 21v-2a4 4 0 0 1 3-3.87" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 export function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
   const tabs: {
     id: TabType;
@@ -92,6 +110,7 @@ export function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
     { id: "leads", label: "Leads", icon: LeadsIcon },
     { id: "followups", label: "Follow-ups", icon: FollowUpsIcon },
     { id: "slots", label: "Slots", icon: SlotsIcon },
+    { id: "users", label: "Users", icon: UsersIcon },
   ];
 
   return (

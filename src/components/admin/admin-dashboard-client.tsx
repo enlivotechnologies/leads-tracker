@@ -21,7 +21,8 @@ interface AdminDashboardClientProps {
     totalCalls: number;
     slotsBooked: number;
     followUpsPending: number;
-    activeEmployees: number;
+    totalDeals: number;
+    totalUsers?: number;
   };
   employeePerformance: {
     id: string;
@@ -71,7 +72,7 @@ export function AdminDashboardClient({
   upcomingSlots,
 }: AdminDashboardClientProps) {
   const [activeTab, setActiveTab] = useState<
-    "employees" | "leads" | "followups" | "slots"
+    "employees" | "leads" | "followups" | "slots" | "users"
   >("employees");
 
   return (
@@ -104,6 +105,41 @@ export function AdminDashboardClient({
             <FollowUpsPanel followUps={pendingFollowUps} />
           )}
           {activeTab === "slots" && <SlotsPanel slots={upcomingSlots} />}
+          {activeTab === "users" && (
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h2 className="text-lg font-semibold text-slate-800">
+                  Users Available
+                </h2>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {allEmployees.length} users
+                </p>
+              </div>
+
+              {allEmployees.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">
+                  No users found
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {allEmployees.map((emp) => (
+                    <div
+                      key={emp.id}
+                      className="px-5 py-4 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-slate-800">{emp.name}</p>
+                        <p className="text-sm text-slate-500">{emp.email}</p>
+                      </div>
+                      <div className="text-sm font-medium text-slate-600">
+                        Leads: {emp.totalLeads}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
     </div>
