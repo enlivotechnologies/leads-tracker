@@ -47,12 +47,7 @@ export function EmployeeTable({ employees, selectedDate }: EmployeeTableProps) {
     <>
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-800">
-            Employee Performance
-          </h2>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Click on an employee to view details
-          </p>
+          <h2 className="text-lg font-semibold text-slate-800">Team</h2>
         </div>
 
         {employees.length === 0 ? (
@@ -61,15 +56,15 @@ export function EmployeeTable({ employees, selectedDate }: EmployeeTableProps) {
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {employees.map((emp) => (
+            {employees.map((emp, index) => (
               <button
                 key={emp.id}
                 onClick={() => setSelectedEmployee(emp.id)}
                 className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                    {emp.name.charAt(0).toUpperCase()}
+                  <div className="text-sm text-slate-500 w-6 text-right">
+                    {index + 1}.
                   </div>
                   <div>
                     <p className="font-medium text-slate-800 text-base">

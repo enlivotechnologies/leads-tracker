@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminHeader } from "./admin-header";
 import { KpiCards } from "./kpi-cards";
 import { AdminTabs } from "./admin-tabs";
@@ -9,6 +9,7 @@ import { LeadsPanel } from "./leads-panel";
 import { FollowUpsPanel } from "./follow-ups-panel";
 import { SlotsPanel } from "./slots-panel";
 import { AdminDateSelector } from "./admin-date-selector";
+import { getPendingFollowUps } from "@/app/actions/admin";
 
 interface AdminDashboardClientProps {
   admin: {
@@ -75,6 +76,43 @@ export function AdminDashboardClient({
   const [activeTab, setActiveTab] = useState<
     "employees" | "leads" | "followups" | "slots" | "users"
   >("employees");
+  const [followUps, setFollowUps] = useState(pendingFollowUps);
+
+  useEffect(() => {
+    setFollowUps(pendingFollowUps);
+  }, [pendingFollowUps]);
+
+  useEffect(() => {
+    if (activeTab !== "followups") return;
+
+    let isMounted = true;
+    const fetchLatest = async () => {
+      try {
+        const latest = await getPendingFollowUps();
+        if (isMounted) setFollowUps(latest);
+      } catch (error) {
+        console.error("Failed to refresh follow-ups:", error);
+      }
+    };
+
+    fetchLatest();
+    const interval = setInterval(fetchLatest, 8000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchLatest();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", fetchLatest);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", fetchLatest);
+    };
+  }, [activeTab]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -103,7 +141,7 @@ export function AdminDashboardClient({
             <LeadsPanel employees={allEmployees} selectedDate={selectedDate} />
           )}
           {activeTab === "followups" && (
-            <FollowUpsPanel followUps={pendingFollowUps} />
+            <FollowUpsPanel followUps={followUps} />
           )}
           {activeTab === "slots" && <SlotsPanel slots={upcomingSlots} />}
           {activeTab === "users" && (

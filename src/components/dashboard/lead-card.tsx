@@ -121,7 +121,7 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
             </div>
           )}
 
-          {lead.followUpDate && (
+          {lead.followUpDate && !lead.followUpDone && (
             <div className="flex items-center gap-1.5">
               <svg
                 width="14"
@@ -195,7 +195,7 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
       )}
 
       {/* Call Type Badge for Follow-ups */}
-      {lead.callType === "FOLLOW_UP" && (
+      {lead.callType === "FOLLOW_UP" && !lead.followUpDone && (
         <div className="mt-3 pt-3 border-t border-gray-100">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200">
             <svg

@@ -106,9 +106,9 @@ export function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
     label: string;
     icon: React.FC<{ className?: string }>;
   }[] = [
-    { id: "employees", label: "Employees", icon: EmployeesIcon },
-    { id: "leads", label: "Leads", icon: LeadsIcon },
-    { id: "followups", label: "Follow-ups", icon: FollowUpsIcon },
+    { id: "employees", label: "Team", icon: EmployeesIcon },
+    { id: "leads", label: "Booked", icon: LeadsIcon },
+    { id: "followups", label: "Follow up", icon: FollowUpsIcon },
     { id: "slots", label: "Slots", icon: SlotsIcon },
     { id: "users", label: "Users", icon: UsersIcon },
   ];
@@ -126,7 +126,7 @@ export function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
               flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200
               ${
                 isActive
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/60 ring-1 ring-blue-500/30"
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-200/60 ring-1 ring-blue-500/30"
                   : "bg-white/80 text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm"
               }
             `}

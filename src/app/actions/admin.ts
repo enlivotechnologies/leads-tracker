@@ -97,6 +97,13 @@ export async function getEmployeePerformance(date: string) {
     include: {
       leads: {
         where: { date: targetDate },
+        select: {
+          slotRequested: true,
+          slotDate: true,
+          responseStatus: true,
+          followUpDate: true,
+          followUpDone: true,
+        },
       },
     },
     orderBy: { name: "asc" },
@@ -111,7 +118,7 @@ export async function getEmployeePerformance(date: string) {
       (l: any) => l.responseStatus === "INTERESTED",
     ).length;
     const followUps = emp.leads.filter(
-      (l: any) => l.responseStatus === "CALL_LATER",
+      (l: any) => l.followUpDate && !l.followUpDone,
     ).length;
     const interestedRate =
       calls > 0 ? Math.round((interested / calls) * 100) : 0;
@@ -158,28 +165,81 @@ export async function getEmployeeDetail(employeeId: string, date?: string) {
 
   if (!employee) return null;
 
-  const whereClause: { employeeId: string; date?: Date } = { employeeId };
-  if (date) {
-    whereClause.date = parseLocalDate(date);
+  const createdDate = new Date(employee.createdAt);
+  createdDate.setHours(0, 0, 0, 0);
+
+  const baseDate = date ? parseLocalDate(date) : new Date();
+  baseDate.setHours(0, 0, 0, 0);
+  if (baseDate.getTime() < createdDate.getTime()) {
+    baseDate.setTime(createdDate.getTime());
+  }
+  const previousDate = new Date(baseDate);
+  previousDate.setDate(previousDate.getDate() - 1);
+
+  const dateFilter = [baseDate];
+  if (previousDate.getTime() >= createdDate.getTime()) {
+    dateFilter.push(previousDate);
   }
 
-  const leads = await prisma.lead.findMany({
-    where: whereClause,
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+  const toKey = (d: Date) => d.toISOString().split("T")[0];
+  const baseKey = toKey(baseDate);
+  const prevKey = toKey(previousDate);
 
-  // Calculate stats
-  const totalCalls = leads.length;
-  const totalSlots = leads.filter(
-    (l: any) => l.slotRequested && l.slotDate,
-  ).length;
-  const interestedCount = leads.filter(
-    (l: any) => l.responseStatus === "INTERESTED",
-  ).length;
-  const followUpCount = leads.filter(
-    (l: any) => l.responseStatus === "CALL_LATER" && !l.followUpDone,
-  ).length;
+  const countForDate = async (target: Date) => {
+    const [calls, slots, followUps] = await prisma.$transaction([
+      prisma.lead.count({ where: { employeeId, date: target } }),
+      prisma.lead.count({
+        where: {
+          employeeId,
+          date: target,
+          slotRequested: true,
+          slotDate: { not: null },
+        },
+      }),
+      prisma.lead.count({
+        where: {
+          employeeId,
+          date: target,
+          followUpDate: { not: null },
+          followUpDone: false,
+        },
+      }),
+    ]);
+
+    return { calls, slots, followUps };
+  };
+
+  const dailyStats: {
+    date: string;
+    calls: number;
+    slots: number;
+    followUps: number;
+  }[] = [];
+  const baseStats = await countForDate(baseDate);
+  dailyStats.push({ date: baseKey, ...baseStats });
+
+  if (previousDate.getTime() >= createdDate.getTime()) {
+    const prevStats = await countForDate(previousDate);
+    dailyStats.push({ date: prevKey, ...prevStats });
+  }
+
+  const totals = dailyStats.reduce(
+    (acc, row) => {
+      acc.calls += row.calls;
+      acc.slots += row.slots;
+      acc.followUps += row.followUps;
+      return acc;
+    },
+    { calls: 0, slots: 0, followUps: 0 },
+  );
+
+  const interestedCount = await prisma.lead.count({
+    where: {
+      employeeId,
+      date: { in: dateFilter },
+      responseStatus: "INTERESTED",
+    },
+  });
 
   return {
     employee: {
@@ -187,21 +247,14 @@ export async function getEmployeeDetail(employeeId: string, date?: string) {
       createdAt: employee.createdAt.toISOString(),
       updatedAt: employee.updatedAt.toISOString(),
     },
-    leads: leads.map((lead: any) => ({
-      ...lead,
-      date: lead.date.toISOString().split("T")[0],
-      slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
-      createdAt: lead.createdAt.toISOString(),
-      updatedAt: lead.updatedAt.toISOString(),
-    })),
     stats: {
-      totalCalls,
-      totalSlots,
+      totalCalls: totals.calls,
+      totalSlots: totals.slots,
       interestedCount,
-      followUpCount,
-      conversionRate:
-        totalCalls > 0 ? Math.round((totalSlots / totalCalls) * 100) : 0,
+      followUpCount: totals.followUps,
+      conversionRate: 0,
     },
+    dailyStats,
   };
 }
 
@@ -262,6 +315,7 @@ export async function getLeadsWithFilters(filters: {
     phoneNumber: lead.phone ?? "",
     date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
+    followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   }));
@@ -275,10 +329,16 @@ export async function getPendingFollowUps() {
       followUpDone: false,
       OR: [{ slotDate: null }, { slotRequested: false }],
     },
-    include: {
-      employee: {
-        select: { name: true },
-      },
+    select: {
+      id: true,
+      collegeName: true,
+      contactPerson: true,
+      phone: true,
+      responseStatus: true,
+      remarks: true,
+      date: true,
+      followUpDate: true,
+      employee: { select: { name: true } },
     },
     orderBy: { date: "desc" },
   });
@@ -288,10 +348,7 @@ export async function getPendingFollowUps() {
     contactPerson: lead.contactPerson ?? "",
     phoneNumber: lead.phone ?? "",
     date: lead.date.toISOString().split("T")[0],
-    slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
     followUpDate: lead.followUpDate?.toISOString().split("T")[0] || null,
-    createdAt: lead.createdAt.toISOString(),
-    updatedAt: lead.updatedAt.toISOString(),
   }));
 }
 
@@ -305,10 +362,13 @@ export async function getUpcomingSlots() {
       slotRequested: true,
       slotDate: { gte: today },
     },
-    include: {
-      employee: {
-        select: { name: true },
-      },
+    select: {
+      id: true,
+      collegeName: true,
+      contactPerson: true,
+      phone: true,
+      slotDate: true,
+      employee: { select: { name: true } },
     },
     orderBy: { slotDate: "asc" },
   });
@@ -318,10 +378,7 @@ export async function getUpcomingSlots() {
     contactPerson: lead.contactPerson ?? "",
     phoneNumber: lead.phone ?? "",
     slotTime: null, // slotTime field not yet in schema
-    date: lead.date.toISOString().split("T")[0],
     slotDate: lead.slotDate?.toISOString().split("T")[0] || null,
-    createdAt: lead.createdAt.toISOString(),
-    updatedAt: lead.updatedAt.toISOString(),
   }));
 }
 

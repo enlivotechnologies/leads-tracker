@@ -23,6 +23,7 @@ interface Lead {
   slotDate: string | null;
   slotTime: string | null;
   date: string;
+  followUpDate: string | null;
   adminRemarks: string | null;
   employee: { name: string; email: string };
 }
@@ -56,16 +57,19 @@ export function LeadsPanel({ employees, selectedDate }: LeadsPanelProps) {
     loadLeads();
   };
 
-  const filteredLeads = leads.filter((lead) => {
-    if (!search) return true;
-    const searchLower = search.toLowerCase();
-    return (
-      lead.collegeName.toLowerCase().includes(searchLower) ||
-      lead.contactPerson.toLowerCase().includes(searchLower) ||
-      lead.phoneNumber.includes(search) ||
-      lead.employee.name.toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredLeads = leads
+    .filter((lead) => lead.responseStatus !== "CALL_LATER")
+    .filter((lead) => !lead.followUpDate)
+    .filter((lead) => {
+      if (!search) return true;
+      const searchLower = search.toLowerCase();
+      return (
+        lead.collegeName.toLowerCase().includes(searchLower) ||
+        lead.contactPerson.toLowerCase().includes(searchLower) ||
+        lead.phoneNumber.includes(search) ||
+        lead.employee.name.toLowerCase().includes(searchLower)
+      );
+    });
 
   const getStatusColor = (status: string) => {
     switch (status) {

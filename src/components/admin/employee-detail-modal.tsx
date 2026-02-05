@@ -28,7 +28,6 @@ interface EmployeeDetail {
     name: string;
     email: string;
   };
-  leads: Lead[];
   stats: {
     totalCalls: number;
     totalSlots: number;
@@ -36,6 +35,12 @@ interface EmployeeDetail {
     followUpCount: number;
     conversionRate: number;
   };
+  dailyStats: {
+    date: string;
+    calls: number;
+    slots: number;
+    followUps: number;
+  }[];
 }
 
 function CloseIcon({ className }: { className?: string }) {
@@ -99,6 +104,14 @@ export function EmployeeDetailModal({
     return `${day}-${month}`;
   };
 
+  const getDayLabel = (dateStr: string) => formatDate(dateStr);
+
+  const orderedStats = data
+    ? [...data.dailyStats].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      )
+    : [];
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -131,81 +144,35 @@ export function EmployeeDetailModal({
               <table className="w-full">
                 <thead>
                   <tr className="text-xs text-slate-500 font-medium">
-                    <th className="text-left pb-3">Employee</th>
-                    <th className="text-center pb-3">Date</th>
+                    <th className="text-left pb-3">Person</th>
+                    <th className="text-center pb-3">Day</th>
                     <th className="text-center pb-3">Calls</th>
-                    <th className="text-center pb-3">Slots</th>
-                    <th className="text-center pb-3">Follow-ups</th>
+                    <th className="text-center pb-3">Booked</th>
+                    <th className="text-center pb-3">Follow up</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="text-sm">
-                    <td className="text-left font-medium text-slate-800">
-                      {data.employee.name}
-                    </td>
-                    <td className="text-center text-slate-600">
-                      {formatDate(selectedDate)}
-                    </td>
-                    <td className="text-center font-semibold text-slate-800">
-                      {data.stats.totalCalls}
-                    </td>
-                    <td className="text-center font-semibold text-teal-600">
-                      {data.stats.totalSlots}
-                    </td>
-                    <td className="text-center font-semibold text-amber-600">
-                      {data.stats.followUpCount}
-                    </td>
-                  </tr>
+                  {orderedStats.map((row) => (
+                    <tr key={row.date} className="text-sm">
+                      <td className="text-left font-medium text-slate-800">
+                        {data.employee.name}
+                      </td>
+                      <td className="text-center text-slate-600">
+                        {getDayLabel(row.date)}
+                      </td>
+                      <td className="text-center font-semibold text-slate-800">
+                        {row.calls}
+                      </td>
+                      <td className="text-center font-semibold text-teal-600">
+                        {row.slots}
+                      </td>
+                      <td className="text-center font-semibold text-amber-600">
+                        {row.followUps}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-            </div>
-
-            {/* Leads List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {data.leads.length === 0 ? (
-                <p className="text-center text-slate-500 py-8">
-                  No leads for this date
-                </p>
-              ) : (
-                data.leads.map((lead) => (
-                  <div
-                    key={lead.id}
-                    className="bg-slate-50 rounded-xl p-4 border border-slate-200"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-slate-800">
-                          {lead.collegeName}
-                        </h3>
-                        <p className="text-sm text-slate-600 mt-0.5">
-                          {lead.contactPerson}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {lead.phoneNumber}
-                        </p>
-                      </div>
-                      <span
-                        className={`text-xs px-2.5 py-1 rounded-full font-medium ${getStatusColor(lead.responseStatus)}`}
-                      >
-                        {lead.responseStatus.replace("_", " ")}
-                      </span>
-                    </div>
-
-                    {lead.slotRequested && lead.slotDate && (
-                      <div className="mt-2 text-xs text-emerald-600 font-medium">
-                        Slot: {lead.slotDate}{" "}
-                        {lead.slotTime && `at ${lead.slotTime}`}
-                      </div>
-                    )}
-
-                    {lead.remarks && (
-                      <p className="mt-2 text-xs text-slate-600 bg-white p-2 rounded-lg">
-                        {lead.remarks}
-                      </p>
-                    )}
-                  </div>
-                ))
-              )}
             </div>
           </>
         ) : (

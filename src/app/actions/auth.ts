@@ -24,18 +24,19 @@ export async function signIn(email: string, password: string) {
   if (user) {
     const name =
       user.user_metadata?.name || user.email?.split("@")[0] || "Employee";
-    const employee = await prisma.employee.upsert({
+    const existing = await prisma.employee.findUnique({
       where: { userId: user.id },
-      update: {
-        email: user.email!,
-        name,
-      },
-      create: {
-        userId: user.id,
-        email: user.email!,
-        name,
-      },
     });
+
+    const employee = existing
+      ? existing
+      : await prisma.employee.create({
+          data: {
+            userId: user.id,
+            email: user.email!,
+            name,
+          },
+        });
 
     // Set redirect path based on role
     if (employee.role === "ADMIN") {

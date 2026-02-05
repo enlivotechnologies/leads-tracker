@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, Clock, CheckCircle } from "lucide-react";
+import { Clock, CheckCircle } from "lucide-react";
 
 interface FollowUpsPanelProps {
   followUps: {
@@ -47,25 +47,27 @@ export function FollowUpsPanel({
                     {lead.collegeName}
                   </h3>
                   <p className="text-[12px] text-slate-600">
-                    {lead.contactPerson}
+                    Contact name: {lead.contactPerson || "—"}
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="mt-0.5">
                     <a
                       href={`tel:${lead.phoneNumber}`}
-                      className="flex items-center gap-1 text-[11px] text-indigo-600"
+                      className="text-[11px] text-indigo-600 underline-offset-2 hover:underline"
                     >
-                      <Phone className="w-3 h-3" />
-                      {lead.phoneNumber}
+                      Ph no: {lead.phoneNumber}
                     </a>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    By {lead.employee.name}
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Created by: {lead.employee.name}
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Follow-up by: {lead.employee.name}
                   </p>
                   <p className="text-[11px] text-slate-500">
                     Follow-up date: {lead.followUpDate || "—"}
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    Added on: {lead.date}
+                    Created on: {lead.date}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">

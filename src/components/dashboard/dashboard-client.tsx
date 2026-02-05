@@ -11,7 +11,6 @@ import { FollowUpsList } from "@/components/dashboard/follow-ups-list";
 import { AddLeadForm } from "@/components/dashboard/add-lead-form";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { LoadingSpinner } from "@/components/ui/loading";
 import {
   getLeadsByDate,
   getAllEmployeeLeads,
@@ -35,7 +34,6 @@ export function DashboardClient({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState("today");
   const [isAddingLead, setIsAddingLead] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -70,15 +68,12 @@ export function DashboardClient({
       if (lastFetchedDate === dateString && todayLeads.length > 0) {
         return;
       }
-      setIsLoading(true);
       try {
         const leads = await getLeadsByDate(dateString);
         setTodayLeads(leads);
         setLastFetchedDate(dateString);
       } catch (error) {
         console.error("Error fetching leads:", error);
-      } finally {
-        setIsLoading(false);
       }
     },
     [getLeadsByDate, lastFetchedDate, todayLeads.length],
@@ -86,42 +81,36 @@ export function DashboardClient({
 
   const fetchAllLeads = useCallback(async () => {
     if (allLeads.length > 0) return;
-    setIsLoading(true);
     try {
       const leads = await getAllEmployeeLeads();
       setAllLeads(leads);
     } catch (error) {
       console.error("Error fetching all leads:", error);
-    } finally {
-      setIsLoading(false);
     }
   }, [allLeads.length, getAllEmployeeLeads]);
 
   const fetchCollegeCalls = useCallback(async () => {
     if (collegeCalls.length > 0) return;
-    setIsLoading(true);
     try {
       const result = await getCollegeCallSummary();
       setCollegeCalls(result);
     } catch (error) {
       console.error("Error fetching college calls:", error);
-    } finally {
-      setIsLoading(false);
     }
   }, [collegeCalls.length, getCollegeCallSummary]);
 
-  const fetchFollowUps = useCallback(async () => {
-    if (followUpLeads.length > 0) return;
-    setIsLoading(true);
-    try {
-      const leads = await getFollowUpLeads();
-      setFollowUpLeads(leads);
-    } catch (error) {
-      console.error("Error fetching follow-ups:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [followUpLeads.length, getFollowUpLeads]);
+  const fetchFollowUps = useCallback(
+    async (force = false) => {
+      if (!force && followUpLeads.length > 0) return;
+      try {
+        const leads = await getFollowUpLeads();
+        setFollowUpLeads(leads);
+      } catch (error) {
+        console.error("Error fetching follow-ups:", error);
+      }
+    },
+    [followUpLeads.length, getFollowUpLeads],
+  );
 
   // Fetch leads when tab changes
   useEffect(() => {
@@ -132,7 +121,7 @@ export function DashboardClient({
     } else if (activeTab === "all") {
       fetchAllLeads();
     } else if (activeTab === "followups") {
-      fetchFollowUps();
+      fetchFollowUps(true);
     } else if (activeTab === "colleges") {
       fetchCollegeCalls();
     }
@@ -144,6 +133,26 @@ export function DashboardClient({
     fetchFollowUps,
     fetchCollegeCalls,
   ]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+
+    const prefetch = () => {
+      fetchAllLeads();
+      fetchFollowUps();
+      fetchCollegeCalls();
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const idleId = (window as any).requestIdleCallback(prefetch, {
+        timeout: 1200,
+      });
+      return () => (window as any).cancelIdleCallback?.(idleId);
+    }
+
+    const timeoutId = window.setTimeout(prefetch, 600);
+    return () => window.clearTimeout(timeoutId);
+  }, [selectedDate, fetchAllLeads, fetchFollowUps, fetchCollegeCalls]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -319,9 +328,7 @@ export function DashboardClient({
         {/* Follow-ups Header */}
         {activeTab === "followups" && (
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Follow-ups
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Follow-ups</h2>
             <p className="text-sm text-gray-500">
               Pending follow-ups that need action
             </p>
@@ -348,19 +355,8 @@ export function DashboardClient({
         )}
 
         {/* Leads List */}
-        {isLoading &&
-        ((activeTab === "colleges" && collegeCalls.length === 0) ||
-          (activeTab === "followups" && followUpLeads.length === 0) ||
-          (activeTab !== "colleges" && activeTab !== "followups" &&
-            getCurrentLeads().length === 0)) ? (
-          <div className="flex items-center justify-center py-12">
-            <LoadingSpinner size="lg" />
-          </div>
-        ) : activeTab === "colleges" ? (
+        {activeTab === "colleges" ? (
           <>
-            {isLoading && (
-              <div className="mb-3 text-xs text-slate-500">Updating…</div>
-            )}
             {collegeCalls.length === 0 ? (
               <div className="p-8 text-center text-slate-500">
                 {getEmptyMessage()}
@@ -392,9 +388,6 @@ export function DashboardClient({
           </>
         ) : activeTab === "followups" ? (
           <>
-            {isLoading && (
-              <div className="mb-3 text-xs text-slate-500">Updating…</div>
-            )}
             <FollowUpsList
               leads={followUpLeads}
               onComplete={handleFollowUpCompleted}
@@ -403,9 +396,6 @@ export function DashboardClient({
           </>
         ) : (
           <>
-            {isLoading && (
-              <div className="mb-3 text-xs text-slate-500">Updating…</div>
-            )}
             <LeadsList
               leads={getCurrentLeads()}
               emptyMessage={getEmptyMessage()}

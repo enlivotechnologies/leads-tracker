@@ -35,9 +35,7 @@ export function FollowUpsList({
         <p className="text-slate-600 font-medium text-base">
           No pending follow-ups
         </p>
-        <p className="text-sm text-slate-400 mt-1">
-          You’re all caught up
-        </p>
+        <p className="text-sm text-slate-400 mt-1">You’re all caught up</p>
       </div>
     );
   }
@@ -55,23 +53,23 @@ export function FollowUpsList({
                 {lead.collegeName}
               </p>
               <p className="text-[12px] text-slate-600 mt-0.5">
-                {lead.contactPerson || "Contact not set"}
+                Contact name: {lead.contactPerson || "—"}
               </p>
               {lead.phone && (
                 <a
                   href={`tel:${lead.phone}`}
-                  className="text-[12px] text-indigo-600 mt-0.5 inline-block"
+                  className="text-[12px] text-indigo-600 mt-0.5 inline-block underline-offset-2 hover:underline"
                 >
-                  {lead.phone}
+                  Ph no: {lead.phone}
                 </a>
               )}
-              <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-500">
+              <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500">
                 <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
                   Pending
                 </span>
-                <span>
-                  Follow-up: {lead.followUpDate || "—"}
-                </span>
+                <span>Follow-up date: {lead.followUpDate || "—"}</span>
+                <span>Created by: You</span>
+                <span>Follow-up by: You</span>
               </div>
             </div>
 

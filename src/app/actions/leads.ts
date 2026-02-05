@@ -189,7 +189,6 @@ export async function getFollowUpLeads() {
   const leads = await prisma.lead.findMany({
     where: {
       employeeId: employee.id,
-      responseStatus: "CALL_LATER",
       followUpDate: { not: null },
       followUpDone: false,
     },

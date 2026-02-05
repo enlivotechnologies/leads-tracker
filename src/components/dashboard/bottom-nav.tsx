@@ -158,7 +158,7 @@ export function BottomNav({
               <path d="M4 7h16" />
               <path d="M12 3l8 4H4l8-4z" />
             </svg>
-            <span>Colleges</span>
+            <span></span>
           </button>
         </div>
       </div>
