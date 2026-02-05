@@ -188,7 +188,7 @@ export function DashboardClient({
       (lead) => lead.responseStatus === "NOT_INTERESTED",
     ).length;
     const followUps = leads.filter(
-      (lead) => lead.responseStatus === "CALL_LATER" && !lead.slotDate,
+      (lead) => !!lead.followUpDate && !lead.slotDate,
     ).length;
 
     return {
@@ -293,45 +293,57 @@ export function DashboardClient({
         )}
 
         {/* Leads List */}
-        {isLoading ? (
+        {isLoading &&
+        ((activeTab === "colleges" && collegeCalls.length === 0) ||
+          (activeTab !== "colleges" && getCurrentLeads().length === 0)) ? (
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>
         ) : activeTab === "colleges" ? (
-          collegeCalls.length === 0 ? (
-            <div className="p-8 text-center text-slate-500">
-              {getEmptyMessage()}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {collegeCalls.map((college, index) => (
-                <div
-                  key={`${college.collegeName}-${college.location}-${index}`}
-                  className="bg-white rounded-2xl border border-slate-200 px-4 py-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900">
-                        {college.collegeName}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        {college.location || "Location not set"}
-                      </p>
-                    </div>
-                    <div className="text-lg font-semibold text-slate-700">
-                      {college.count}
+          <>
+            {isLoading && (
+              <div className="mb-3 text-xs text-slate-500">Updating…</div>
+            )}
+            {collegeCalls.length === 0 ? (
+              <div className="p-8 text-center text-slate-500">
+                {getEmptyMessage()}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {collegeCalls.map((college, index) => (
+                  <div
+                    key={`${college.collegeName}-${college.location}-${index}`}
+                    className="bg-white rounded-2xl border border-slate-200 px-4 py-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-slate-900">
+                          {college.collegeName}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          {college.location || "Location not set"}
+                        </p>
+                      </div>
+                      <div className="text-lg font-semibold text-slate-700">
+                        {college.count}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )
+                ))}
+              </div>
+            )}
+          </>
         ) : (
-          <LeadsList
-            leads={getCurrentLeads()}
-            emptyMessage={getEmptyMessage()}
-            emptySubMessage={getEmptySubMessage()}
-          />
+          <>
+            {isLoading && (
+              <div className="mb-3 text-xs text-slate-500">Updating…</div>
+            )}
+            <LeadsList
+              leads={getCurrentLeads()}
+              emptyMessage={getEmptyMessage()}
+              emptySubMessage={getEmptySubMessage()}
+            />
+          </>
         )}
       </main>
 

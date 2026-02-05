@@ -54,15 +54,15 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
   return (
     <div
       className={cn(
-        "bg-white rounded-2xl p-5 border border-slate-200",
+        "bg-white rounded-2xl p-4 sm:p-5 border border-slate-200",
         "transition-all duration-200",
         onClick && "cursor-pointer hover:border-gray-200 active:scale-[0.98]",
       )}
       onClick={onClick}
     >
       {/* Header - Name & Status */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <h3 className="text-lg font-semibold text-gray-900 leading-tight">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-tight">
           {lead.collegeName}
         </h3>
         <span
@@ -98,7 +98,7 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
 
       {/* Slot Date & Phone */}
       {(lead.slotDate || lead.phone || lead.followUpDate) && (
-        <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-3">
           {lead.slotDate && (
             <div className="flex items-center gap-1.5">
               <svg
@@ -166,7 +166,9 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
       {lead.contactPerson && (
         <p className="text-sm text-gray-600 mb-2">
           <span className="text-gray-500">Contact:</span>{" "}
-          <span className="font-medium">{lead.contactPerson}</span>
+          <span className="font-medium text-sm sm:text-base">
+            {lead.contactPerson}
+          </span>
           {lead.designation && (
             <span className="text-gray-500">
               {" "}
@@ -187,7 +189,7 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
 
       {/* Remarks */}
       {lead.remarks && (
-        <p className="text-sm text-gray-400 italic leading-relaxed line-clamp-2">
+        <p className="text-xs sm:text-sm text-gray-400 italic leading-relaxed line-clamp-2">
           "{lead.remarks}"
         </p>
       )}
