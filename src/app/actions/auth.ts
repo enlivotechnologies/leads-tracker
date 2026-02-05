@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 export async function signIn(email: string, password: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -17,27 +17,25 @@ export async function signIn(email: string, password: string) {
   }
 
   // Check if employee exists, if not create one
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   let redirectPath = "/dashboard";
 
-  if (user) {
-    let employee = await prisma.employee.findUnique({
-      where: { userId: user.id },
-    });
+  const user = data.user;
 
-    if (!employee) {
-      employee = await prisma.employee.create({
-        data: {
-          userId: user.id,
-          email: user.email!,
-          name:
-            user.user_metadata?.name || user.email?.split("@")[0] || "Employee",
-        },
-      });
-    }
+  if (user) {
+    const name =
+      user.user_metadata?.name || user.email?.split("@")[0] || "Employee";
+    const employee = await prisma.employee.upsert({
+      where: { userId: user.id },
+      update: {
+        email: user.email!,
+        name,
+      },
+      create: {
+        userId: user.id,
+        email: user.email!,
+        name,
+      },
+    });
 
     // Set redirect path based on role
     if (employee.role === "ADMIN") {
