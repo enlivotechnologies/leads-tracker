@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 
 export async function signIn(email: string, password: string) {
   const supabase = await createClient();
@@ -16,36 +15,8 @@ export async function signIn(email: string, password: string) {
     return { error: error.message };
   }
 
-  // Check if employee exists, if not create one
-  let redirectPath = "/dashboard";
-
-  const user = data.user;
-
-  if (user) {
-    const name =
-      user.user_metadata?.name || user.email?.split("@")[0] || "Employee";
-    const existing = await prisma.employee.findUnique({
-      where: { userId: user.id },
-    });
-
-    const employee = existing
-      ? existing
-      : await prisma.employee.create({
-          data: {
-            userId: user.id,
-            email: user.email!,
-            name,
-          },
-        });
-
-    // Set redirect path based on role
-    if (employee.role === "ADMIN") {
-      redirectPath = "/admin";
-    }
-  }
-
-  // Return success with redirect path
-  return { success: true, redirectPath };
+  // Return success with redirect path (role handled after redirect)
+  return { success: true, redirectPath: "/dashboard" };
 }
 
 export async function signOut() {

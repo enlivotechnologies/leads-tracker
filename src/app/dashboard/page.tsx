@@ -10,6 +10,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  if (employee.role === "ADMIN") {
+    redirect("/admin");
+  }
+
   // Get today's leads
   const today = new Date();
   const todayString = getDateString(today);
