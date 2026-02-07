@@ -64,13 +64,25 @@ export function FollowUpsList({
                 </a>
               )}
               <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500">
-                <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
-                  Pending
-                </span>
-                <span>Follow-up date: {lead.followUpDate || "—"}</span>
-                <span>Created by: You</span>
-                <span>Follow-up by: You</span>
+                {lead.responseStatus === "CALL_LATER" ? (
+                  <span className="px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+                    Call Later
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                    Pending
+                  </span>
+                )}
+                {lead.followUpDate && (
+                  <span>Follow-up: {lead.followUpDate}</span>
+                )}
+                <span>Created: {lead.date}</span>
               </div>
+              {lead.remarks && (
+                <p className="text-[11px] text-slate-500 mt-1 bg-slate-50 p-2 rounded">
+                  Remarks: {lead.remarks}
+                </p>
+              )}
             </div>
 
             <button
@@ -78,7 +90,7 @@ export function FollowUpsList({
               disabled={completingId === lead.id}
               className="shrink-0 text-[11px] px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm shadow-emerald-200/60 hover:opacity-95 disabled:opacity-60"
             >
-              {completingId === lead.id ? "Completing..." : "Completed"}
+              {completingId === lead.id ? "Completing..." : "Complete"}
             </button>
           </div>
         </div>

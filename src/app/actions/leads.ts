@@ -189,11 +189,18 @@ export async function getFollowUpLeads() {
   const leads = await prisma.lead.findMany({
     where: {
       employeeId: employee.id,
-      followUpDate: { not: null },
-      followUpDone: false,
+      // Include leads that need follow-up:
+      // 1. Has followUpDate set and not completed, OR
+      // 2. Response status is CALL_LATER (needs follow-up even without explicit date)
+      OR: [
+        { followUpDate: { not: null }, followUpDone: false },
+        { responseStatus: "CALL_LATER", followUpDone: false },
+      ],
+      // Exclude leads that already have a slot booked
+      AND: [{ OR: [{ slotDate: null }, { slotRequested: false }] }],
     },
     orderBy: {
-      followUpDate: "asc",
+      createdAt: "desc",
     },
   });
 
