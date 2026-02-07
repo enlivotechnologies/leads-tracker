@@ -128,8 +128,12 @@ export async function getEmployeePerformance(date: string) {
     const interested = emp.leads.filter(
       (l: any) => l.responseStatus === "INTERESTED",
     ).length;
+    // Follow-ups: leads with followUpDate set OR CALL_LATER status, not completed, no slot booked
     const followUps = emp.leads.filter(
-      (l: any) => l.followUpDate && !l.followUpDone,
+      (l: any) =>
+        ((l.followUpDate && !l.followUpDone) ||
+          (l.responseStatus === "CALL_LATER" && !l.followUpDone)) &&
+        (!l.slotDate || !l.slotRequested),
     ).length;
     const interestedRate =
       calls > 0 ? Math.round((interested / calls) * 100) : 0;
@@ -207,12 +211,16 @@ export async function getEmployeeDetail(employeeId: string, date?: string) {
           slotDate: { not: null },
         },
       }),
+      // Follow-ups: leads with followUpDate set OR CALL_LATER status, not completed, no slot booked
       prisma.lead.count({
         where: {
           employeeId,
           date: target,
-          followUpDate: { not: null },
-          followUpDone: false,
+          OR: [
+            { followUpDate: { not: null }, followUpDone: false },
+            { responseStatus: "CALL_LATER", followUpDone: false },
+          ],
+          AND: [{ OR: [{ slotDate: null }, { slotRequested: false }] }],
         },
       }),
     ]);
