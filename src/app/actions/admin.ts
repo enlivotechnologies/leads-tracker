@@ -47,7 +47,7 @@ export async function getAdmin() {
 export async function getDashboardKPIs(date: string) {
   const targetDate = parseLocalDate(date);
 
-  const [totalCalls, slotsBooked, followUpsPending, totalDeals, totalUsers] =
+  const [totalCalls, slotsBooked, totalDeals, totalUsers] =
     await prisma.$transaction([
       // Total calls made today
       prisma.lead.count({
@@ -63,21 +63,32 @@ export async function getDashboardKPIs(date: string) {
         },
       }),
 
-      // Follow-ups pending (all time, not completed)
-      prisma.lead.count({
-        where: {
-          followUpDate: { not: null },
-          followUpDone: false,
-          OR: [{ slotDate: null }, { slotRequested: false }],
-        },
-      }),
-
       // Total leads (all time)
       prisma.lead.count(),
 
       // Total users (employees) in database
       prisma.employee.count(),
     ]);
+
+  // Follow-ups pending (all time, not completed) - same logic as getPendingFollowUps
+  const followUpsPending = await prisma.lead.count({
+    where: {
+      OR: [
+        // Leads with explicit follow-up date that are not done
+        {
+          followUpDate: { not: null },
+          followUpDone: false,
+        },
+        // Leads with CALL_LATER status (need follow-up even without explicit date)
+        {
+          responseStatus: "CALL_LATER",
+          followUpDone: false,
+        },
+      ],
+      // Exclude leads that already have a slot booked
+      AND: [{ OR: [{ slotDate: null }, { slotRequested: false }] }],
+    },
+  });
 
   return {
     totalCalls,
@@ -326,9 +337,23 @@ export async function getLeadsWithFilters(filters: {
 export async function getPendingFollowUps() {
   const leads = await prisma.lead.findMany({
     where: {
-      followUpDate: { not: null },
-      followUpDone: false,
-      OR: [{ slotDate: null }, { slotRequested: false }],
+      // Include leads that need follow-up:
+      // 1. Has followUpDate set and not completed, OR
+      // 2. Response status is CALL_LATER (needs follow-up regardless of followUpDate)
+      OR: [
+        // Leads with explicit follow-up date that are not done
+        {
+          followUpDate: { not: null },
+          followUpDone: false,
+        },
+        // Leads with CALL_LATER status (need follow-up even without explicit date)
+        {
+          responseStatus: "CALL_LATER",
+          followUpDone: false,
+        },
+      ],
+      // Exclude leads that already have a slot booked
+      AND: [{ OR: [{ slotDate: null }, { slotRequested: false }] }],
     },
     select: {
       id: true,
